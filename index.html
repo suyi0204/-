@@ -1300,6 +1300,33 @@
                 }
             }
 
+            // 新增：刪除用戶方法
+            async deleteUser(email) {
+                try {
+                    // 先刪除該用戶的所有預約
+                    const { error: bookingsError } = await this.supabase
+                        .from('bookings')
+                        .delete()
+                        .eq('user_email', email);
+
+                    if (bookingsError) throw bookingsError;
+
+                    // 然後刪除用戶
+                    const { data, error } = await this.supabase
+                        .from('users')
+                        .delete()
+                        .eq('email', email)
+                        .select()
+                        .single();
+                    
+                    if (error) throw error;
+                    return data;
+                } catch (error) {
+                    console.error('Delete user error:', error);
+                    throw error;
+                }
+            }
+
             isAdmin(user) {
                 return user && (user.is_admin === true || user.is_admin === 'true' || user.email === '11056046@ntub.edu.tw');
             }
@@ -1333,7 +1360,6 @@
                 this.generateSecurityQuestions();
             }
 
-            // 修復：添加缺失的方法
             getWeekStartDate(date) {
                 const newDate = new Date(date);
                 const day = newDate.getDay();
@@ -2290,6 +2316,9 @@
                             <div><strong>電子郵件：</strong>${user.email}</div>
                             <div><strong>狀態：</strong><span class="status-${user.status}">${user.status}</span></div>
                         </div>
+                        <div class="user-actions">
+                            <button class="btn btn-danger btn-sm" onclick="app.deleteUser('${user.email}')">刪除用戶</button>
+                        </div>
                     `;
                     container.appendChild(userEl);
                 });
@@ -2309,10 +2338,10 @@
                     
                     try {
                         await this.sendApprovalNotification(email, userToApprove);
-                        this.showMessage('用戶已核准，並已發送通知郵件', 'success');
+                        this.showMessage('用戶已核准，並已發送通知郵件。請通知用戶重新登入以啟用預約功能。', 'success');
                     } catch (mailError) {
                         console.error('郵件發送失敗，但用戶已核准:', mailError);
-                        this.showMessage('用戶已核准，但通知郵件發送失敗', 'warning');
+                        this.showMessage('用戶已核准，但通知郵件發送失敗。請通知用戶重新登入以啟用預約功能。', 'warning');
                     }
                     
                     await this.renderAdminPanel();
@@ -2333,7 +2362,28 @@
                         student_id: userData.student_id,
                         user_email: userEmail,
                         system_url: window.location.origin,
-                        approval_time: new Date().toLocaleString('zh-TW')
+                        approval_time: new Date().toLocaleString('zh-TW'),
+                        message: `親愛的 ${userData.real_name} 同學：
+
+恭喜！您的北商熱音社練團室預約系統帳號已通過審核。
+
+您的帳號資訊：
+- 姓名：${userData.real_name}
+- 學號：${userData.student_id}
+- 電子郵件：${userEmail}
+
+請重新登入系統以啟用預約功能：
+${window.location.origin}
+
+重新登入後，您將可以：
+✓ 預約練團室時段
+✓ 查看您的預約記錄
+✓ 管理您的個人資料
+
+如有任何問題，請聯繫管理員。
+
+祝您使用愉快！
+北商熱音社 管理團隊`
                     };
 
                     console.log('審核通過郵件參數:', templateParams);
@@ -2360,6 +2410,21 @@
                     this.renderAdminPanel();
                 } catch (error) {
                     this.showMessage('拒絕失敗：' + error.message, 'error');
+                }
+            }
+
+            // 新增：刪除用戶方法
+            async deleteUser(email) {
+                if (!confirm('確定要刪除此用戶嗎？此操作將同時刪除該用戶的所有預約記錄，且無法復原！')) {
+                    return;
+                }
+
+                try {
+                    await this.cloudStorage.deleteUser(email);
+                    this.showMessage('用戶已成功刪除', 'success');
+                    await this.renderAdminPanel();
+                } catch (error) {
+                    this.showMessage('刪除用戶失敗：' + error.message, 'error');
                 }
             }
 
