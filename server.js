@@ -20,20 +20,20 @@ app.use(cors({
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-// Office 365 SMTP 配置
-const transporter = nodemailer.createTransporter({
+// Office 365 SMTP 配置 - 修正這裡！
+const transporter = nodemailer.createTransport({
     host: 'smtp.office365.com',
     port: 587,
     secure: false, // 使用 STARTTLS
     auth: {
-        user: '11056046@ntub.edu.tw',
-        pass: 'owym cjvw hsct jarf'
+        user: process.env.GMAIL_USER || '11056046@ntub.edu.tw',
+        pass: process.env.GMAIL_APP_PASSWORD || 'owym cjvw hsct jarf'
     },
     tls: {
         ciphers: 'SSLv3',
         rejectUnauthorized: false
     },
-    debug: true, // 開啟偵錯模式
+    debug: true,
     logger: true
 });
 
@@ -67,6 +67,8 @@ transporter.verify((error, success) => {
         });
     }
 });
+
+// 其餘的程式碼保持不變...
 
 // 郵件模板函數（保持不變）
 function generateEmailContent(type, notification_type, data) {
