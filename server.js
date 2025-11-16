@@ -6,25 +6,23 @@ require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// 中間件
+// 中間件 - 修正 CORS
 app.use(express.json());
 app.use(cors({
-    origin: [
-        'http://localhost:3000',
-        'http://127.0.0.1:3000',
-        'https://statuesque-toffee-f52484.netlify.app',
-        'https://*.netlify.app'
-    ],
+    origin: 'https://statuesque-toffee-f52484.netlify.app',
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
 
-// Office 365 SMTP 配置 - 修正這裡！
+// 處理 preflight 請求
+app.options('*', cors());
+
+// Office 365 SMTP 配置
 const transporter = nodemailer.createTransport({
     host: 'smtp.office365.com',
     port: 587,
-    secure: false, // 使用 STARTTLS
+    secure: false,
     auth: {
         user: process.env.GMAIL_USER || '11056046@ntub.edu.tw',
         pass: process.env.GMAIL_APP_PASSWORD || 'owym cjvw hsct jarf'
@@ -32,10 +30,10 @@ const transporter = nodemailer.createTransport({
     tls: {
         ciphers: 'SSLv3',
         rejectUnauthorized: false
-    },
-    debug: true,
-    logger: true
+    }
 });
+
+// 其餘程式碼保持不變...
 
 // 測試郵件連接
 transporter.verify((error, success) => {
