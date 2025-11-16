@@ -51,6 +51,10 @@ function generateEmailContent(type, notification_type, data) {
         </div>
     `;
 
+    // 定義網站網址
+    const websiteUrl = 'https://statuesque-toffee-f52484.netlify.app/';
+    const adminUrl = 'https://statuesque-toffee-f52484.netlify.app/';
+
     if (type === 'admin') {
         if (notification_type === 'user_registration') {
             subject = `【新用戶註冊】${data.real_name} 已完成註冊`;
@@ -87,7 +91,8 @@ function generateEmailContent(type, notification_type, data) {
                     <strong>請注意：</strong>新用戶需要通過審核才能使用預約功能。
                 </div>
                 
-                <a href="${data.system_url}" style="display: inline-block; padding: 12px 24px; background: #3b82f6; color: white; text-decoration: none; border-radius: 6px; margin-top: 15px; font-weight: 600;">前往管理後台</a>
+                <!-- 管理員後台按鈕 -->
+                <a href="${adminUrl}" style="display: inline-block; padding: 12px 24px; background: #3b82f6; color: white; text-decoration: none; border-radius: 6px; margin-top: 15px; font-weight: 600;">前往管理後台</a>
             ` + baseFooter;
         } else if (notification_type === 'new_booking') {
             subject = `【新預約通知】${data.real_name} 預約了練團室`;
@@ -106,7 +111,7 @@ function generateEmailContent(type, notification_type, data) {
                         <div style="font-weight: 600; width: 120px; color: #64748b;">日期：</div>
                         <div style="flex: 1;">${data.booking_date}</div>
                     </div>
-                    <div style="display: flex; margin-bottom: 10px;">
+                    <div style="display: flex; margin-bottom: 10file:///C:/Users/suyi1/AppData/Local/Temp/8c1d9c7a.tmp.htmlpx;">
                         <div style="font-weight: 600; width: 120px; color: #64748b;">時間：</div>
                         <div style="flex: 1;">${data.booking_time}</div>
                     </div>
@@ -130,7 +135,8 @@ function generateEmailContent(type, notification_type, data) {
                     </div>
                 </div>
                 
-                <a href="${data.system_url}" style="display: inline-block; padding: 12px 24px; background: #3b82f6; color: white; text-decoration: none; border-radius: 6px; margin-top: 15px; font-weight: 600;">前往管理後台</a>
+                <!-- 管理員後台按鈕 -->
+                <a href="${adminUrl}" style="display: inline-block; padding: 12px 24px; background: #3b82f6; color: white; text-decoration: none; border-radius: 6px; margin-top: 15px; font-weight: 600;">前往管理後台</a>
             ` + baseFooter;
         }
     } else if (type === 'user') {
@@ -180,7 +186,8 @@ function generateEmailContent(type, notification_type, data) {
                     <p style="margin: 0;">✓ 如有任何問題，請聯繫管理員</p>
                 </div>
                 
-                <a href="${data.system_url}" style="display: inline-block; padding: 12px 24px; background: #3b82f6; color: white; text-decoration: none; border-radius: 6px; margin-top: 15px; font-weight: 600;">重新登入系統</a>
+                <!-- 用戶重新登入按鈕 -->
+                <a href="${websiteUrl}" style="display: inline-block; padding: 12px 24px; background: #3b82f6; color: white; text-decoration: none; border-radius: 6px; margin-top: 15px; font-weight: 600;">重新登入系統</a>
                 ` : ''}
             ` + baseFooter;
         } else if (notification_type === 'booking_confirmation') {
@@ -229,7 +236,8 @@ function generateEmailContent(type, notification_type, data) {
                     <p style="margin: 0;"><strong>請注意：</strong>請準時到達練團室，如有變動請提前取消預約。</p>
                 </div>
                 
-                <a href="${data.system_url}" style="display: inline-block; padding: 12px 24px; background: #3b82f6; color: white; text-decoration: none; border-radius: 6px; margin-top: 15px; font-weight: 600;">查看我的預約</a>
+                <!-- 用戶查看預約按鈕 -->
+                <a href="${websiteUrl}" style="display: inline-block; padding: 12px 24px; background: #3b82f6; color: white; text-decoration: none; border-radius: 6px; margin-top: 15px; font-weight: 600;">查看我的預約</a>
             ` + baseFooter;
         }
     }
