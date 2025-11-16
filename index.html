@@ -587,7 +587,17 @@
         /* 響應式設計 */
         @media (max-width: 768px) {
             .nav-toggle {
-                display: block;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                width: 44px;
+                height: 44px;
+                transition: all 0.3s ease;
+            }
+
+            .nav-toggle:hover {
+                background: var(--primary-light);
+                border-radius: var(--radius);
             }
 
             .nav-menu {
@@ -598,19 +608,40 @@
                 left: 0;
                 width: 100%;
                 background: white;
-                box-shadow: var(--shadow);
-                padding: 1rem 0;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+                border-top: 1px solid var(--gray);
                 z-index: 1000;
+                max-height: 70vh;
+                overflow-y: auto;
             }
 
             .nav-menu.active {
                 display: flex;
+                animation: slideDown 0.3s ease;
+            }
+
+            @keyframes slideDown {
+                from {
+                    opacity: 0;
+                    transform: translateY(-10px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
             }
 
             .nav-item {
-                padding: 12px 2rem;
+                padding: 16px 2rem;
                 border-bottom: 1px solid var(--gray-light);
                 justify-content: flex-start;
+                font-size: 1rem;
+                transition: all 0.2s ease;
+            }
+
+            .nav-item:hover {
+                background: var(--primary-light);
+                color: var(--primary-dark);
             }
 
             .nav-item:last-child {
@@ -675,6 +706,16 @@
             .status-text {
                 font-size: 0.7rem;
             }
+
+            /* 確保通知徽章在手機上可見 */
+            .notification-badge {
+                margin-left: 8px;
+            }
+        }
+
+        /* 當選單打開時防止背景滾動 */
+        body.menu-open {
+            overflow: hidden;
         }
     </style>
 </head>
@@ -1156,7 +1197,6 @@
                 }
             }
 
-            //
             isAdmin(user) {
                 return user && (user.is_admin === true || user.is_admin === 'true' || user.email === '11056046@ntub.edu.tw');
             }
@@ -1165,323 +1205,287 @@
         // 初始化 Supabase 服務
         const supabaseService = new SupabaseService();
 
-class BandRoomApp {
-    constructor() {
-        this.currentUser = null;
-        this.currentDate = new Date();
-        this.selectedDate = null;
-        this.selectedTime = null;
-        this.selectedType = 'fixed';
-        this.cloudStorage = supabaseService;
-        this.currentView = 'home';
-        this.currentWeekStart = new Date(this.getWeekStartDate(new Date()));
-        this.bookingsCache = {};
-        
-        // 使用您找到的 Public Key
-        emailjs.init("GvMjujaAG9kS-mPCA");
-        
-        this.init();
-    }
-
-    init() {
-        this.setupEventListeners();
-        this.checkLoginStatus();
-        this.showView('home');
-        this.loadHomeStats();
-    }
-
-    setupEventListeners() {
-        document.addEventListener('click', (e) => {
-            if (e.target.matches('[data-view]')) {
-                e.preventDefault();
-                this.showView(e.target.getAttribute('data-view'));
+        class BandRoomApp {
+            constructor() {
+                this.currentUser = null;
+                this.currentDate = new Date();
+                this.selectedDate = null;
+                this.selectedTime = null;
+                this.selectedType = 'fixed';
+                this.cloudStorage = supabaseService;
+                this.currentView = 'home';
+                this.currentWeekStart = new Date(this.getWeekStartDate(new Date()));
+                this.bookingsCache = {};
+                
+                // 使用您找到的 Public Key
+                emailjs.init("GvMjujaAG9kS-mPCA");
+                
+                this.init();
             }
-        });
 
-        document.getElementById('loginForm')?.addEventListener('submit', (e) => this.handleLogin(e));
-        document.getElementById('signupForm')?.addEventListener('submit', (e) => this.handleSignup(e));
-        document.getElementById('profileForm')?.addEventListener('submit', (e) => this.handleProfileUpdate(e));
-        document.getElementById('logoutNav')?.addEventListener('click', (e) => this.handleLogout(e));
+            init() {
+                this.setupEventListeners();
+                this.checkLoginStatus();
+                this.showView('home');
+                this.loadHomeStats();
+            }
 
-        document.getElementById('prevWeek')?.addEventListener('click', () => this.changeWeek(-1));
-        document.getElementById('nextWeek')?.addEventListener('click', () => this.changeWeek(1));
-        document.getElementById('todayBtn')?.addEventListener('click', () => this.goToToday());
-
-        document.getElementById('closeModal')?.addEventListener('click', () => this.closeModal());
-        document.getElementById('confirmBooking')?.addEventListener('click', () => this.confirmBooking());
-
-        document.querySelectorAll('.type-option').forEach(option => {
-            option.addEventListener('click', (e) => {
-                document.querySelectorAll('.type-option').forEach(opt => {
-                    opt.classList.remove('selected');
+            setupEventListeners() {
+                // 漢堡選單點擊事件
+                document.getElementById('navToggle')?.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const navMenu = document.getElementById('navMenu');
+                    navMenu.classList.toggle('active');
+                    document.body.classList.toggle('menu-open');
                 });
-                e.target.classList.add('selected');
-                this.selectedType = e.target.getAttribute('data-type');
-            });
-        });
-    }
 
-    showView(viewName) {
-        this.currentView = viewName;
-        
-        document.querySelectorAll('section.card').forEach(section => {
-            section.classList.add('hidden');
-        });
-        
-        const targetSection = document.getElementById(viewName + 'Section');
-        if (targetSection) {
-            targetSection.classList.remove('hidden');
-        }
-        
-        switch(viewName) {
-            case 'calendar':
-                this.renderTimelineCalendar();
-                break;
-            case 'admin':
-                if (this.currentUser && this.cloudStorage.isAdmin(this.currentUser)) {
-                    this.renderAdminPanel();
-                } else {
-                    this.showView('home');
-                    this.showMessage('您沒有管理員權限', 'error');
+                // 點擊其他地方關閉選單
+                document.addEventListener('click', (e) => {
+                    const navMenu = document.getElementById('navMenu');
+                    const navToggle = document.getElementById('navToggle');
+                    
+                    if (navMenu && navToggle && !navToggle.contains(e.target) && !navMenu.contains(e.target)) {
+                        navMenu.classList.remove('active');
+                        document.body.classList.remove('menu-open');
+                    }
+                });
+
+                // 點擊導航項目後關閉選單（針對手機版）
+                document.querySelectorAll('.nav-item').forEach(item => {
+                    item.addEventListener('click', () => {
+                        const navMenu = document.getElementById('navMenu');
+                        if (window.innerWidth <= 768) {
+                            navMenu.classList.remove('active');
+                            document.body.classList.remove('menu-open');
+                        }
+                    });
+                });
+
+                // 現有的事件監聽器
+                document.addEventListener('click', (e) => {
+                    if (e.target.matches('[data-view]')) {
+                        e.preventDefault();
+                        this.showView(e.target.getAttribute('data-view'));
+                    }
+                });
+
+                document.getElementById('loginForm')?.addEventListener('submit', (e) => this.handleLogin(e));
+                document.getElementById('signupForm')?.addEventListener('submit', (e) => this.handleSignup(e));
+                document.getElementById('profileForm')?.addEventListener('submit', (e) => this.handleProfileUpdate(e));
+                document.getElementById('logoutNav')?.addEventListener('click', (e) => this.handleLogout(e));
+
+                document.getElementById('prevWeek')?.addEventListener('click', () => this.changeWeek(-1));
+                document.getElementById('nextWeek')?.addEventListener('click', () => this.changeWeek(1));
+                document.getElementById('todayBtn')?.addEventListener('click', () => this.goToToday());
+
+                document.getElementById('closeModal')?.addEventListener('click', () => this.closeModal());
+                document.getElementById('confirmBooking')?.addEventListener('click', () => this.confirmBooking());
+
+                document.querySelectorAll('.type-option').forEach(option => {
+                    option.addEventListener('click', (e) => {
+                        document.querySelectorAll('.type-option').forEach(opt => {
+                            opt.classList.remove('selected');
+                        });
+                        e.target.classList.add('selected');
+                        this.selectedType = e.target.getAttribute('data-type');
+                    });
+                });
+            }
+
+            showView(viewName) {
+                this.currentView = viewName;
+                
+                document.querySelectorAll('section.card').forEach(section => {
+                    section.classList.add('hidden');
+                });
+                
+                const targetSection = document.getElementById(viewName + 'Section');
+                if (targetSection) {
+                    targetSection.classList.remove('hidden');
                 }
-                break;
-            case 'profile':
-                this.loadProfileData();
-                break;
-        }
-    }
-async sendApprovalNotification(userEmail, userData) {
-    try {
-        console.log('發送審核通過通知給:', userEmail);
-        
-        const templateParams = {
-            to_email: userEmail,
-            subject: `【帳號審核通過】${userData.real_name} - 北商熱音社練團室系統`,
-            real_name: userData.real_name,
-            student_id: userData.student_id,
-            user_email: userEmail,
-            system_url: window.location.origin, // 系統網址
-            approval_time: new Date().toLocaleString('zh-TW')
-        };
-
-        console.log('審核通過郵件參數:', templateParams);
-
-        // 使用新的模板發送審核通過通知
-        const response = await emailjs.send(
-            'service_wqepdk5',
-            'template_gjqm3nz', // 如果創建了新模板，請替換為新模板ID
-            templateParams
-        );
-
-        console.log('✅ 審核通過通知郵件發送成功！');
-        return true;
-        
-    } catch (error) {
-        console.error('❌ 審核通過通知發送失敗:', error);
-        return false;
-    }
-}
-    showMessage(message, type) {
-        const messageContainer = document.getElementById('messageContainer');
-        const messageEl = document.createElement('div');
-        messageEl.className = `message ${type}`;
-        messageEl.textContent = message;
-        messageContainer.appendChild(messageEl);
-        
-        setTimeout(() => {
-            messageEl.remove();
-        }, 3000);
-    }
-
-    checkLoginStatus() {
-        const savedUser = localStorage.getItem('ntub_currentUser');
-        if (savedUser) {
-            this.currentUser = JSON.parse(savedUser);
-            this.updateNavForLoggedInUser();
-        }
-    }
-
-    updateNavForLoggedInUser() {
-        document.getElementById('loginNav').classList.add('hidden');
-        document.getElementById('signupNav').classList.add('hidden');
-        document.getElementById('profileNav').classList.remove('hidden');
-        document.getElementById('calendarNav').classList.remove('hidden');
-        document.getElementById('logoutNav').classList.remove('hidden');
-        
-        if (this.currentUser && this.cloudStorage.isAdmin(this.currentUser)) {
-            document.getElementById('adminNav').classList.remove('hidden');
-        }
-    }
-
-    async handleSignup(e) {
-        e.preventDefault();
-        const email = document.getElementById('signupEmail').value;
-        const password = document.getElementById('signupPassword').value;
-        const confirmPassword = document.getElementById('signupConfirmPassword').value;
-
-        if (password !== confirmPassword) {
-            this.showMessage('密碼確認不一致', 'error');
-            return;
-        }
-
-        try {
-            const newUser = await this.cloudStorage.signup({
-                email: email,
-                password: password,
-                realName: '',
-                studentId: '',
-                phone: ''
-            });
-
-            this.currentUser = {
-                email: newUser.email,
-                password: newUser.password,
-                realName: newUser.real_name,
-                studentId: newUser.student_id,
-                phone: newUser.phone,
-                status: newUser.status,
-                avatar: newUser.avatar,
-                isAdmin: newUser.is_admin,
-                createdAt: newUser.created_at
-            };
-            
-            localStorage.setItem('ntub_currentUser', JSON.stringify(this.currentUser));
-            this.updateNavForLoggedInUser();
-            this.showMessage('註冊成功！請填寫個人資料', 'success');
-            this.showView('profile');
-            
-        } catch (error) {
-            this.showMessage(error.message, 'error');
-        }
-    }
-
-    async handleLogin(e) {
-        e.preventDefault();
-        const email = document.getElementById('loginEmail').value;
-        const password = document.getElementById('loginPassword').value;
-
-        try {
-            const user = await this.cloudStorage.login(email, password);
-            
-            if (user) {
-                this.currentUser = {
-                    email: user.email,
-                    password: user.password,
-                    realName: user.real_name,
-                    studentId: user.student_id,
-                    phone: user.phone,
-                    status: user.status,
-                    avatar: user.avatar,
-                    isAdmin: user.is_admin,
-                    createdAt: user.created_at
-                };
                 
-                localStorage.setItem('ntub_currentUser', JSON.stringify(this.currentUser));
-                this.updateNavForLoggedInUser();
-                this.showMessage('登入成功！', 'success');
-                
-                if (user.status === 'approved') {
-                    this.showView('calendar');
-                } else {
-                    this.showView('profile');
+                switch(viewName) {
+                    case 'calendar':
+                        this.renderTimelineCalendar();
+                        break;
+                    case 'admin':
+                        if (this.currentUser && this.cloudStorage.isAdmin(this.currentUser)) {
+                            this.renderAdminPanel();
+                        } else {
+                            this.showView('home');
+                            this.showMessage('您沒有管理員權限', 'error');
+                        }
+                        break;
+                    case 'profile':
+                        this.loadProfileData();
+                        break;
                 }
             }
-        } catch (error) {
-            this.showMessage(error.message, 'error');
-        }
-    }
 
-    // 可靠的郵件通知方法（備用方案）
-    sendEmailNotification(subject, message) {
-        const adminEmail = '11056046@ntub.edu.tw';
-        const mailtoLink = `mailto:${adminEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(message)}`;
-        
-        const link = document.createElement('a');
-        link.href = mailtoLink;
-        link.style.display = 'none';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        
-        console.log('郵件通知已準備發送:', subject);
-    }
+            // 其他方法保持不變...
+            async sendApprovalNotification(userEmail, userData) {
+                try {
+                    console.log('發送審核通過通知給:', userEmail);
+                    
+                    const templateParams = {
+                        to_email: userEmail,
+                        subject: `【帳號審核通過】${userData.real_name} - 北商熱音社練團室系統`,
+                        real_name: userData.real_name,
+                        student_id: userData.student_id,
+                        user_email: userEmail,
+                        system_url: window.location.origin,
+                        approval_time: new Date().toLocaleString('zh-TW')
+                    };
 
-    // 使用 EmailJS 自動發送郵件
-    // 使用 EmailJS 自動發送郵件
-// 使用 EmailJS 自動發送郵件（加入詳細錯誤處理）
-// 使用 EmailJS 自動發送郵件
-// 使用 EmailJS 自動發送郵件（修正版）
-// 使用 EmailJS 自動發送郵件（預約人也收得到）
-// 修改發送郵件方法
-// 保留但簡化這個方法，用於其他情況
-async sendEmailJSNotification(subject, message, type, recipientEmail = null) {
-    try {
-        console.log('發送一般郵件...');
-        
-        const templateParams = {
-            to_email: recipientEmail || '11056046@ntub.edu.tw',
-            subject: subject,
-            message: message,
-            type: type,
-            timestamp: new Date().toLocaleString('zh-TW')
-        };
+                    console.log('審核通過郵件參數:', templateParams);
 
-        console.log('一般郵件參數:', templateParams);
+                    const response = await emailjs.send(
+                        'service_wqepdk5',
+                        'template_gjqm3nz',
+                        templateParams
+                    );
 
-        const response = await emailjs.send(
-            'service_wqepdk5',
-            'template_gjqm3nz',
-            templateParams
-        );
+                    console.log('✅ 審核通過通知郵件發送成功！');
+                    return true;
+                    
+                } catch (error) {
+                    console.error('❌ 審核通過通知發送失敗:', error);
+                    return false;
+                }
+            }
 
-        console.log('✅ 一般郵件發送成功！');
-        return true;
-        
-    } catch (error) {
-        console.error('❌ 一般郵件發送失敗:', error);
-        return false;
-    }
-}
+            showMessage(message, type) {
+                const messageContainer = document.getElementById('messageContainer');
+                const messageEl = document.createElement('div');
+                messageEl.className = `message ${type}`;
+                messageEl.textContent = message;
+                messageContainer.appendChild(messageEl);
+                
+                setTimeout(() => {
+                    messageEl.remove();
+                }, 3000);
+            }
 
-// 新增備用方案顯示
-showFallbackEmailContent(subject, message, recipient) {
-    console.log('📋 備用方案 - 郵件內容:');
-    console.log('收件人:', recipient);
-    console.log('主題:', subject);
-    console.log('內容:', message);
-    
-    // 可以選擇性地顯示給用戶看
-    const emailContent = `
-主題: ${subject}
-收件人: ${recipient}
-內容: ${message}
-    `;
-    
-    // 如果需要，可以顯示在頁面上讓用戶複製
-    // this.showMessage('郵件發送失敗，請手動聯繫管理員', 'error');
-}
+            checkLoginStatus() {
+                const savedUser = localStorage.getItem('ntub_currentUser');
+                if (savedUser) {
+                    this.currentUser = JSON.parse(savedUser);
+                    this.updateNavForLoggedInUser();
+                }
+            }
 
-    async handleProfileUpdate(e) {
-        e.preventDefault();
-        const realName = document.getElementById('realName').value;
-        const studentId = document.getElementById('studentId').value;
-        const phone = document.getElementById('phone').value;
+            updateNavForLoggedInUser() {
+                document.getElementById('loginNav').classList.add('hidden');
+                document.getElementById('signupNav').classList.add('hidden');
+                document.getElementById('profileNav').classList.remove('hidden');
+                document.getElementById('calendarNav').classList.remove('hidden');
+                document.getElementById('logoutNav').classList.remove('hidden');
+                
+                if (this.currentUser && this.cloudStorage.isAdmin(this.currentUser)) {
+                    document.getElementById('adminNav').classList.remove('hidden');
+                }
+            }
 
-        try {
-            const updatedUser = await this.cloudStorage.updateUser(this.currentUser.email, {
-                realName: realName,
-                studentId: studentId,
-                phone: phone
-            });
+            // 其他方法保持不變...
+            async handleSignup(e) {
+                e.preventDefault();
+                const email = document.getElementById('signupEmail').value;
+                const password = document.getElementById('signupPassword').value;
+                const confirmPassword = document.getElementById('signupConfirmPassword').value;
 
-            this.currentUser.realName = updatedUser.real_name;
-            this.currentUser.studentId = updatedUser.student_id;
-            this.currentUser.phone = updatedUser.phone;
-            this.currentUser.status = updatedUser.status;
+                if (password !== confirmPassword) {
+                    this.showMessage('密碼確認不一致', 'error');
+                    return;
+                }
 
-            // 發送用戶審核通知
-            const subject = `【用戶審核通知】${realName} 提交了個人資料`;
-            const message = `新的用戶等待審核：
+                try {
+                    const newUser = await this.cloudStorage.signup({
+                        email: email,
+                        password: password,
+                        realName: '',
+                        studentId: '',
+                        phone: ''
+                    });
+
+                    this.currentUser = {
+                        email: newUser.email,
+                        password: newUser.password,
+                        realName: newUser.real_name,
+                        studentId: newUser.student_id,
+                        phone: newUser.phone,
+                        status: newUser.status,
+                        avatar: newUser.avatar,
+                        isAdmin: newUser.is_admin,
+                        createdAt: newUser.created_at
+                    };
+                    
+                    localStorage.setItem('ntub_currentUser', JSON.stringify(this.currentUser));
+                    this.updateNavForLoggedInUser();
+                    this.showMessage('註冊成功！請填寫個人資料', 'success');
+                    this.showView('profile');
+                    
+                } catch (error) {
+                    this.showMessage(error.message, 'error');
+                }
+            }
+
+            async handleLogin(e) {
+                e.preventDefault();
+                const email = document.getElementById('loginEmail').value;
+                const password = document.getElementById('loginPassword').value;
+
+                try {
+                    const user = await this.cloudStorage.login(email, password);
+                    
+                    if (user) {
+                        this.currentUser = {
+                            email: user.email,
+                            password: user.password,
+                            realName: user.real_name,
+                            studentId: user.student_id,
+                            phone: user.phone,
+                            status: user.status,
+                            avatar: user.avatar,
+                            isAdmin: user.is_admin,
+                            createdAt: user.created_at
+                        };
+                        
+                        localStorage.setItem('ntub_currentUser', JSON.stringify(this.currentUser));
+                        this.updateNavForLoggedInUser();
+                        this.showMessage('登入成功！', 'success');
+                        
+                        if (user.status === 'approved') {
+                            this.showView('calendar');
+                        } else {
+                            this.showView('profile');
+                        }
+                    }
+                } catch (error) {
+                    this.showMessage(error.message, 'error');
+                }
+            }
+
+            // 其他方法保持不變...
+            async handleProfileUpdate(e) {
+                e.preventDefault();
+                const realName = document.getElementById('realName').value;
+                const studentId = document.getElementById('studentId').value;
+                const phone = document.getElementById('phone').value;
+
+                try {
+                    const updatedUser = await this.cloudStorage.updateUser(this.currentUser.email, {
+                        realName: realName,
+                        studentId: studentId,
+                        phone: phone
+                    });
+
+                    this.currentUser.realName = updatedUser.real_name;
+                    this.currentUser.studentId = updatedUser.student_id;
+                    this.currentUser.phone = updatedUser.phone;
+                    this.currentUser.status = updatedUser.status;
+
+                    const subject = `【用戶審核通知】${realName} 提交了個人資料`;
+                    const message = `新的用戶等待審核：
 
 姓名：${realName}
 學號：${studentId}
@@ -1490,138 +1494,129 @@ showFallbackEmailContent(subject, message, recipient) {
 提交時間：${new Date().toLocaleString('zh-TW')}
 
 請前往管理後台進行審核。`;
-            
-            // 發送通知（優先使用 EmailJS）
-            await this.sendEmailJSNotification(subject, message, 'user_approval');
-            
-            localStorage.setItem('ntub_currentUser', JSON.stringify(this.currentUser));
-            this.showMessage('個人資料已提交，等待管理員審核。已發送通知給管理員', 'success');
-            
-        } catch (error) {
-            this.showMessage('更新失敗：' + error.message, 'error');
-        }
-    }
-
-    handleLogout(e) {
-        e.preventDefault();
-        this.currentUser = null;
-        localStorage.removeItem('ntub_currentUser');
-        
-        document.getElementById('loginNav').classList.remove('hidden');
-        document.getElementById('signupNav').classList.remove('hidden');
-        document.getElementById('profileNav').classList.add('hidden');
-        document.getElementById('calendarNav').classList.add('hidden');
-        document.getElementById('adminNav').classList.add('hidden');
-        document.getElementById('logoutNav').classList.add('hidden');
-        
-        this.showView('home');
-        this.showMessage('已成功登出', 'success');
-    }
-
-    loadProfileData() {
-        if (this.currentUser) {
-            document.getElementById('realName').value = this.currentUser.realName || '';
-            document.getElementById('studentId').value = this.currentUser.studentId || '';
-            document.getElementById('phone').value = this.currentUser.phone || '';
-        }
-    }
-
-    async loadHomeStats() {
-        try {
-            const users = await this.cloudStorage.getAllUsers();
-            const bookings = await this.cloudStorage.getAllBookings();
-            const today = new Date().toISOString().split('T')[0];
-            const todayBookings = bookings.filter(booking => booking.date === today && booking.status !== 'cancelled');
-
-            document.getElementById('homeTotalUsers').textContent = users.length;
-            document.getElementById('homeTotalBookings').textContent = bookings.filter(b => b.status !== 'cancelled').length;
-            document.getElementById('homeTodayBookings').textContent = todayBookings.length;
-        } catch (error) {
-            console.error('Load home stats error:', error);
-        }
-    }
-
-    // 日曆相關方法
-    getBookingKey(date, time) {
-        return `${date}_${time}`;
-    }
-
-    async loadBookingsToCache() {
-        try {
-            console.log('開始載入預約資料...');
-            const allBookings = await this.cloudStorage.getAllBookings();
-            
-            this.bookingsCache = {};
-            
-            allBookings.forEach(booking => {
-                if (booking.status === 'confirmed') {
-                    const key = this.getBookingKey(booking.date, booking.time);
-                    this.bookingsCache[key] = booking;
+                    
+                    await this.sendEmailJSNotification(subject, message, 'user_approval');
+                    
+                    localStorage.setItem('ntub_currentUser', JSON.stringify(this.currentUser));
+                    this.showMessage('個人資料已提交，等待管理員審核。已發送通知給管理員', 'success');
+                    
+                } catch (error) {
+                    this.showMessage('更新失敗：' + error.message, 'error');
                 }
-            });
-            
-            console.log('快取建立完成，共', Object.keys(this.bookingsCache).length, '筆預約');
-            return true;
-        } catch (error) {
-            console.error('載入預約快取失敗:', error);
-            return false;
-        }
-    }
+            }
 
-    getBookingFromCache(date, time) {
-        const key = this.getBookingKey(date, time);
-        return this.bookingsCache[key] || null;
-    }
+            handleLogout(e) {
+                e.preventDefault();
+                this.currentUser = null;
+                localStorage.removeItem('ntub_currentUser');
+                
+                document.getElementById('loginNav').classList.remove('hidden');
+                document.getElementById('signupNav').classList.remove('hidden');
+                document.getElementById('profileNav').classList.add('hidden');
+                document.getElementById('calendarNav').classList.add('hidden');
+                document.getElementById('adminNav').classList.add('hidden');
+                document.getElementById('logoutNav').classList.add('hidden');
+                
+                this.showView('home');
+                this.showMessage('已成功登出', 'success');
+            }
 
-    addBookingToCache(booking) {
-        const key = this.getBookingKey(booking.date, booking.time);
-        this.bookingsCache[key] = booking;
-    }
+            // 其他方法保持不變...
+            loadProfileData() {
+                if (this.currentUser) {
+                    document.getElementById('realName').value = this.currentUser.realName || '';
+                    document.getElementById('studentId').value = this.currentUser.studentId || '';
+                    document.getElementById('phone').value = this.currentUser.phone || '';
+                }
+            }
 
+            async loadHomeStats() {
+                try {
+                    const users = await this.cloudStorage.getAllUsers();
+                    const bookings = await this.cloudStorage.getAllBookings();
+                    const today = new Date().toISOString().split('T')[0];
+                    const todayBookings = bookings.filter(booking => booking.date === today && booking.status !== 'cancelled');
 
-async confirmBooking() {
-    const name = document.getElementById('bookingName').value;
-    const notes = document.getElementById('bookingNotes').value;
-    
-    if (!name) {
-        this.showMessage('請輸入名稱或團名', 'error');
-        return;
-    }
-    
-    const bookingData = {
-        email: this.currentUser.email,
-        realName: this.currentUser.realName,
-        date: this.selectedDate,
-        time: this.selectedTime,
-        type: this.selectedType,
-        name: name,
-        notes: notes
-    };
-    
-    try {
-        console.log('開始預約流程...', bookingData);
-        
-        const existingBooking = this.getBookingFromCache(this.selectedDate, this.selectedTime);
-        if (existingBooking) {
-            this.showMessage('該時段已被預約', 'error');
-            return;
-        }
-        
-        const newBooking = await this.cloudStorage.createBooking(bookingData);
-        this.addBookingToCache(newBooking);
-        
-        console.log('預約創建成功，開始發送郵件...');
-        
-        // 詳細的調試信息
-        console.log('=== 郵件發送調試 ===');
-        console.log('用戶郵箱:', this.currentUser.email);
-        console.log('用戶郵箱類型:', typeof this.currentUser.email);
-        console.log('用戶郵箱是否有效:', this.currentUser.email && this.currentUser.email.includes('@'));
-        console.log('========================');
+                    document.getElementById('homeTotalUsers').textContent = users.length;
+                    document.getElementById('homeTotalBookings').textContent = bookings.filter(b => b.status !== 'cancelled').length;
+                    document.getElementById('homeTodayBookings').textContent = todayBookings.length;
+                } catch (error) {
+                    console.error('Load home stats error:', error);
+                }
+            }
 
-        // 1. 先發送給管理員
-        const adminSubject = `【新預約通知】${this.currentUser.realName} 預約了練團室`;
-        const adminMessage = `新的練團室預約資訊：
+            // 日曆相關方法保持不變...
+            getBookingKey(date, time) {
+                return `${date}_${time}`;
+            }
+
+            async loadBookingsToCache() {
+                try {
+                    console.log('開始載入預約資料...');
+                    const allBookings = await this.cloudStorage.getAllBookings();
+                    
+                    this.bookingsCache = {};
+                    
+                    allBookings.forEach(booking => {
+                        if (booking.status === 'confirmed') {
+                            const key = this.getBookingKey(booking.date, booking.time);
+                            this.bookingsCache[key] = booking;
+                        }
+                    });
+                    
+                    console.log('快取建立完成，共', Object.keys(this.bookingsCache).length, '筆預約');
+                    return true;
+                } catch (error) {
+                    console.error('載入預約快取失敗:', error);
+                    return false;
+                }
+            }
+
+            getBookingFromCache(date, time) {
+                const key = this.getBookingKey(date, time);
+                return this.bookingsCache[key] || null;
+            }
+
+            addBookingToCache(booking) {
+                const key = this.getBookingKey(booking.date, booking.time);
+                this.bookingsCache[key] = booking;
+            }
+
+            async confirmBooking() {
+                const name = document.getElementById('bookingName').value;
+                const notes = document.getElementById('bookingNotes').value;
+                
+                if (!name) {
+                    this.showMessage('請輸入名稱或團名', 'error');
+                    return;
+                }
+                
+                const bookingData = {
+                    email: this.currentUser.email,
+                    realName: this.currentUser.realName,
+                    date: this.selectedDate,
+                    time: this.selectedTime,
+                    type: this.selectedType,
+                    name: name,
+                    notes: notes
+                };
+                
+                try {
+                    console.log('開始預約流程...', bookingData);
+                    
+                    const existingBooking = this.getBookingFromCache(this.selectedDate, this.selectedTime);
+                    if (existingBooking) {
+                        this.showMessage('該時段已被預約', 'error');
+                        return;
+                    }
+                    
+                    const newBooking = await this.cloudStorage.createBooking(bookingData);
+                    this.addBookingToCache(newBooking);
+                    
+                    console.log('預約創建成功，開始發送郵件...');
+
+                    const adminSubject = `【新預約通知】${this.currentUser.realName} 預約了練團室`;
+                    const adminMessage = `新的練團室預約資訊：
 
 預約人：${this.currentUser.realName} (${this.currentUser.email})
 日期：${this.selectedDate}
@@ -1633,643 +1628,593 @@ async confirmBooking() {
 
 請前往管理後台查看詳細資訊。`;
 
-        console.log('準備發送管理員通知...');
-        await this.sendAdminNotification(adminSubject, adminMessage);
-        
-        // 2. 然後發送給用戶
-        console.log('準備發送用戶確認信...');
-        const userEmailSent = await this.sendUserBookingConfirmation(bookingData, name, notes);
-        
-        console.log('用戶郵件發送結果:', userEmailSent);
-        
-        this.closeModal();
-        if (userEmailSent) {
-            this.showMessage('預約成功！確認信已發送到您的信箱', 'success');
-        } else {
-            this.showMessage('預約成功！但確認信發送失敗，請截圖保存預約資訊', 'warning');
-        }
-        await this.renderTimelineCalendar();
-        
-    } catch (error) {
-        console.error('預約過程中出錯:', error);
-        this.showMessage(error.message, 'error');
-    }
-}
-
-// 專門發送用戶預約確認信的方法
-
-
-// 專門發送用戶預約確認信的方法
-// 專門發送用戶預約確認信的方法
-// 專門發送用戶預約確認信的方法（只保留這個）
-// 專門發送管理員通知的方法
-async sendAdminNotification(subject, message) {
-    try {
-        console.log('🔵 發送管理員通知...');
-        
-        const templateParams = {
-            to_email: '11056046@ntub.edu.tw', // 發給管理員
-            subject: subject,
-            message: message,
-            type: 'admin_notification',
-            real_name: this.currentUser.realName,
-            user_email: this.currentUser.email,
-            timestamp: new Date().toLocaleString('zh-TW')
-        };
-
-        console.log('管理員通知參數:', templateParams);
-        console.log('使用模板: template_94pmhgs');
-
-        // 使用管理員專用模板
-        const response = await emailjs.send(
-            'service_wqepdk5',
-            'template_94pmhgs', // 管理員模板
-            templateParams
-        );
-
-        console.log('✅ 管理員通知發送成功！');
-        return true;
-        
-    } catch (error) {
-        console.error('❌ 管理員通知發送失敗:', error);
-        return false;
-    }
-}
-async sendUserBookingConfirmation(bookingData, name, notes) {
-    try {
-        console.log('🎯 發送用戶預約確認信...');
-        console.log('用戶郵箱:', this.currentUser.email);
-        
-        const userSubject = `【預約成功】${this.selectedDate} ${this.selectedTime} - ${name} 練團室預約確認`;
-
-        const templateParams = {
-            to_email: this.currentUser.email, // 發給用戶
-            subject: userSubject,
-            real_name: this.currentUser.realName,
-            student_id: this.currentUser.studentId,
-            user_email: this.currentUser.email,
-            user_phone: this.currentUser.phone || '未提供',
-            booking_date: this.selectedDate,
-            booking_time: this.selectedTime,
-            booking_type: this.getTypeText(this.selectedType),
-            booking_name: name,
-            booking_notes: notes || '無',
-            timestamp: new Date().toLocaleString('zh-TW')
-        };
-
-        console.log('=== 用戶確認信詳細信息 ===');
-        console.log('模板ID: template_gjqm3nz');
-        console.log('收件人參數 (to_email):', templateParams.to_email);
-        console.log('用戶真實郵箱:', this.currentUser.email);
-        console.log('主題:', templateParams.subject);
-        console.log('========================');
-
-        const response = await emailjs.send(
-            'service_wqepdk5',
-            'template_gjqm3nz',
-            templateParams
-        );
-
-        console.log('✅ 用戶確認信發送成功！');
-        console.log('回應狀態:', response.status);
-        return true;
-        
-    } catch (error) {
-        console.error('❌ 用戶確認信發送失敗:');
-        console.error('錯誤詳情:', error);
-        return false;
-    }
-}
-// 測試郵件發送
-async testEmailTemplates() {
-    console.log('=== 測試郵件模板 ===');
-    
-    // 測試管理員模板
-    console.log('測試管理員模板 (template_94pmhgs)...');
-    try {
-        const adminTest = await emailjs.send(
-            'service_wqepdk5',
-            'template_94pmhgs',
-            {
-                to_email: '11056046@ntub.edu.tw',
-                subject: '測試管理員模板',
-                message: '這是管理員模板測試'
-            }
-        );
-        console.log('✅ 管理員模板測試成功');
-    } catch (error) {
-        console.error('❌ 管理員模板測試失敗:', error);
-    }
-    
-    // 測試用戶模板
-    console.log('測試用戶模板 (template_gjqm3nz)...');
-    try {
-        const userTest = await emailjs.send(
-            'service_wqepdk5',
-            'template_gjqm3nz',
-            {
-                to_email: this.currentUser.email,
-                subject: '測試用戶模板',
-                real_name: '測試用戶',
-                student_id: '123456',
-                user_email: this.currentUser.email,
-                booking_date: '2024-01-01',
-                booking_time: '10:00',
-                booking_type: '測試類型',
-                booking_name: '測試團名'
-            }
-        );
-        console.log('✅ 用戶模板測試成功');
-    } catch (error) {
-        console.error('❌ 用戶模板測試失敗:', error);
-    }
-}
-// 創建備用郵件連結
-createFallbackEmail(email, subject, body) {
-    const mailtoLink = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-    console.log('備用郵件連結:', mailtoLink);
-    
-    // 可以選擇提供這個連結給用戶
-    // const link = document.createElement('a');
-    // link.href = mailtoLink;
-    // link.click();
-}
-    // 修改 changeWeek 方法
-    async changeWeek(weeks) {
-        const newDate = new Date(this.currentWeekStart);
-        newDate.setDate(newDate.getDate() + (weeks * 7));
-        
-        const maxDate = new Date();
-        maxDate.setMonth(maxDate.getMonth() + 2);
-        
-        if (newDate > maxDate && weeks > 0) {
-            this.showMessage('只能預約兩個月內的時段', 'warning');
-            return;
-        }
-        
-        this.currentWeekStart = newDate;
-        await this.renderTimelineCalendar();
-    }
-
-    async goToToday() {
-        this.currentWeekStart = new Date(this.getWeekStartDate(new Date()));
-        await this.renderTimelineCalendar();
-    }
-
-    // 輔助方法
-    getWeekStartDate(date) {
-        const newDate = new Date(date);
-        const day = newDate.getDay();
-        const diff = newDate.getDate() - day + (day === 0 ? -6 : 1);
-        newDate.setDate(diff);
-        newDate.setHours(0, 0, 0, 0);
-        return newDate;
-    }
-
-    formatDate(date) {
-        const year = date.getFullYear();
-        const month = date.getMonth() + 1;
-        const day = date.getDate();
-        return `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
-    }
-
-    formatDisplayDate(date) {
-        const month = date.getMonth() + 1;
-        const day = date.getDate();
-        const weekDays = ['日', '一', '二', '三', '四', '五', '六'];
-        const weekDay = weekDays[date.getDay()];
-        return `${month}/${day} 週${weekDay}`;
-    }
-
-    isPastDate(date) {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        return date < today;
-    }
-
-    isWithinTwoMonths(date) {
-        const today = new Date();
-        const twoMonthsLater = new Date();
-        twoMonthsLater.setMonth(today.getMonth() + 2);
-        return date <= twoMonthsLater;
-    }
-
-    isPastTimeSlot(date, time) {
-        const now = new Date();
-        const [hours, minutes] = time.split(':').map(Number);
-        const slotDateTime = new Date(date);
-        slotDateTime.setHours(hours, minutes, 0, 0);
-        return slotDateTime < now;
-    }
-
-    getTypeText(type) {
-        const typeMap = {
-            'fixed': '固定練團',
-            'personal': '個人練習',
-            'free': '自由練團'
-        };
-        return typeMap[type] || type;
-    }
-
-    // 修正 getWeekOfMonth 方法
-    getWeekOfMonth(date) {
-        const firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
-        const firstDayOfWeek = firstDay.getDay() || 7;
-        
-        const currentDate = date.getDate();
-        
-        const weekNumber = Math.ceil((currentDate + firstDayOfWeek - 1) / 7);
-        
-        return Math.min(weekNumber, 4);
-    }
-
-    // 修改顯示週數的方法
-    getWeekDisplay(startDate) {
-        const endDate = new Date(startDate);
-        endDate.setDate(startDate.getDate() + 6);
-        
-        const startMonth = startDate.getMonth() + 1;
-        const endMonth = endDate.getMonth() + 1;
-        const startYear = startDate.getFullYear();
-        const endYear = endDate.getFullYear();
-        
-        if (startYear === endYear && startMonth === endMonth) {
-            const weekNumber = this.getWeekOfMonth(startDate);
-            const displayWeek = Math.min(weekNumber, 4);
-            return `${startYear}年${startMonth}月 第${displayWeek}週`;
-        } 
-        else if (startYear === endYear) {
-            const startWeek = this.getWeekOfMonth(startDate);
-            const endWeek = this.getWeekOfMonth(endDate);
-            const displayStartWeek = Math.min(startWeek, 4);
-            const displayEndWeek = Math.min(endWeek, 4);
-            return `${startYear}年${startMonth}月第${displayStartWeek}週-${endMonth}月第${displayEndWeek}週`;
-        }
-        else {
-            const startWeek = this.getWeekOfMonth(startDate);
-            const endWeek = this.getWeekOfMonth(endDate);
-            const displayStartWeek = Math.min(startWeek, 4);
-            const displayEndWeek = Math.min(endWeek, 4);
-            return `${startYear}年${startMonth}月第${displayStartWeek}週-${endYear}年${endMonth}月第${displayEndWeek}週`;
-        }
-    }
-
-    // renderTimelineCalendar 方法
-    async renderTimelineCalendar() {
-        console.log('開始渲染日曆...');
-        const startTime = Date.now();
-        
-        await this.loadBookingsToCache();
-        
-        const container = document.getElementById('timelineContainer');
-        container.innerHTML = '';
-        
-        // 使用新的週數顯示方法
-        const weekDisplay = document.getElementById('currentWeekDisplay');
-        if (weekDisplay) {
-            weekDisplay.textContent = this.getWeekDisplay(this.currentWeekStart);
-        }
-        
-        const timeSlots = ['09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00'];
-        
-        // 創建時間列
-        const timeColumn = document.createElement('div');
-        timeColumn.className = 'time-column';
-        
-        const emptyHeader = document.createElement('div');
-        emptyHeader.className = 'time-slot-header';
-        emptyHeader.textContent = '時間';
-        timeColumn.appendChild(emptyHeader);
-        
-        timeSlots.forEach(time => {
-            const timeHeader = document.createElement('div');
-            timeHeader.className = 'time-slot-header';
-            timeHeader.textContent = time;
-            timeColumn.appendChild(timeHeader);
-        });
-        
-        container.appendChild(timeColumn);
-        
-        // 創建日期列
-        const daysContainer = document.createElement('div');
-        daysContainer.className = 'days-container';
-        
-        const weekDates = [];
-        for (let i = 0; i < 7; i++) {
-            const date = new Date(this.currentWeekStart);
-            date.setDate(this.currentWeekStart.getDate() + i);
-            weekDates.push({
-                date: date,
-                dateStr: this.formatDate(date)
-            });
-        }
-        
-        const now = new Date();
-        
-        // 創建所有時間格子
-        weekDates.forEach(dayInfo => {
-            const dayColumn = document.createElement('div');
-            dayColumn.className = 'day-column';
-            
-            const dayHeader = document.createElement('div');
-            dayHeader.className = 'day-header';
-            dayHeader.innerHTML = `
-                <div class="day-name">${this.formatDisplayDate(dayInfo.date)}</div>
-                <div class="day-date">${dayInfo.dateStr}</div>
-            `;
-            dayColumn.appendChild(dayHeader);
-            
-            const timeSlotsContainer = document.createElement('div');
-            timeSlotsContainer.className = 'time-slots';
-            
-            timeSlots.forEach(time => {
-                const timeSlot = document.createElement('div');
-                timeSlot.className = 'time-slot';
-                
-                const booking = this.getBookingFromCache(dayInfo.dateStr, time);
-                const [hours, minutes] = time.split(':').map(Number);
-                const slotDateTime = new Date(dayInfo.date);
-                slotDateTime.setHours(hours, minutes, 0, 0);
-                
-                const isPast = slotDateTime < now;
-                const isWithinTwoMonths = this.isWithinTwoMonths(dayInfo.date);
-                
-                if (booking) {
-                    timeSlot.className += ' booked';
-                    timeSlot.title = `已預約：${booking.name} (${booking.real_name}) - ${this.getTypeText(booking.type)}`;
+                    console.log('準備發送管理員通知...');
+                    await this.sendAdminNotification(adminSubject, adminMessage);
                     
-                    if (this.currentUser && booking.user_email === this.currentUser.email) {
-                        timeSlot.className += ' own-booking';
+                    console.log('準備發送用戶確認信...');
+                    const userEmailSent = await this.sendUserBookingConfirmation(bookingData, name, notes);
+                    
+                    console.log('用戶郵件發送結果:', userEmailSent);
+                    
+                    this.closeModal();
+                    if (userEmailSent) {
+                        this.showMessage('預約成功！確認信已發送到您的信箱', 'success');
+                    } else {
+                        this.showMessage('預約成功！但確認信發送失敗，請截圖保存預約資訊', 'warning');
                     }
+                    await this.renderTimelineCalendar();
                     
-                    const bookingInfo = document.createElement('div');
-                    bookingInfo.className = 'booking-info';
-                    bookingInfo.innerHTML = `
-                        <div class="booking-name" title="${booking.name}">${this.truncateText(booking.name, 6)}</div>
-                        <div class="booking-type" title="${this.getTypeText(booking.type)}">${this.getTypeText(booking.type)}</div>
-                    `;
-                    timeSlot.appendChild(bookingInfo);
-                } else if (isPast) {
-                    timeSlot.className += ' past';
-                    timeSlot.innerHTML = '<span class="status-text">已過期</span>';
-                    timeSlot.title = '此時間段已過期，無法預約';
-                } else if (!isWithinTwoMonths) {
-                    timeSlot.className += ' future-limit';
-                    timeSlot.innerHTML = '<span class="status-text">不可預約</span>';
-                    timeSlot.title = '只能預約兩個月內的時段';
-                } else {
-                    timeSlot.className += ' available';
-                    timeSlot.innerHTML = '<span class="status-text">可預約</span>';
-                    timeSlot.title = '點擊預約此時間段';
-                    timeSlot.addEventListener('click', () => {
-                        this.openBookingModal(dayInfo.dateStr, time);
+                } catch (error) {
+                    console.error('預約過程中出錯:', error);
+                    this.showMessage(error.message, 'error');
+                }
+            }
+
+            async sendAdminNotification(subject, message) {
+                try {
+                    console.log('🔵 發送管理員通知...');
+                    
+                    const templateParams = {
+                        to_email: '11056046@ntub.edu.tw',
+                        subject: subject,
+                        message: message,
+                        type: 'admin_notification',
+                        real_name: this.currentUser.realName,
+                        user_email: this.currentUser.email,
+                        timestamp: new Date().toLocaleString('zh-TW')
+                    };
+
+                    console.log('管理員通知參數:', templateParams);
+                    console.log('使用模板: template_94pmhgs');
+
+                    const response = await emailjs.send(
+                        'service_wqepdk5',
+                        'template_94pmhgs',
+                        templateParams
+                    );
+
+                    console.log('✅ 管理員通知發送成功！');
+                    return true;
+                    
+                } catch (error) {
+                    console.error('❌ 管理員通知發送失敗:', error);
+                    return false;
+                }
+            }
+
+            async sendUserBookingConfirmation(bookingData, name, notes) {
+                try {
+                    console.log('🎯 發送用戶預約確認信...');
+                    console.log('用戶郵箱:', this.currentUser.email);
+                    
+                    const userSubject = `【預約成功】${this.selectedDate} ${this.selectedTime} - ${name} 練團室預約確認`;
+
+                    const templateParams = {
+                        to_email: this.currentUser.email,
+                        subject: userSubject,
+                        real_name: this.currentUser.realName,
+                        student_id: this.currentUser.studentId,
+                        user_email: this.currentUser.email,
+                        user_phone: this.currentUser.phone || '未提供',
+                        booking_date: this.selectedDate,
+                        booking_time: this.selectedTime,
+                        booking_type: this.getTypeText(this.selectedType),
+                        booking_name: name,
+                        booking_notes: notes || '無',
+                        timestamp: new Date().toLocaleString('zh-TW')
+                    };
+
+                    console.log('=== 用戶確認信詳細信息 ===');
+                    console.log('模板ID: template_gjqm3nz');
+                    console.log('收件人參數 (to_email):', templateParams.to_email);
+                    console.log('用戶真實郵箱:', this.currentUser.email);
+                    console.log('主題:', templateParams.subject);
+                    console.log('========================');
+
+                    const response = await emailjs.send(
+                        'service_wqepdk5',
+                        'template_gjqm3nz',
+                        templateParams
+                    );
+
+                    console.log('✅ 用戶確認信發送成功！');
+                    console.log('回應狀態:', response.status);
+                    return true;
+                    
+                } catch (error) {
+                    console.error('❌ 用戶確認信發送失敗:');
+                    console.error('錯誤詳情:', error);
+                    return false;
+                }
+            }
+
+            async sendEmailJSNotification(subject, message, type, recipientEmail = null) {
+                try {
+                    console.log('發送一般郵件...');
+                    
+                    const templateParams = {
+                        to_email: recipientEmail || '11056046@ntub.edu.tw',
+                        subject: subject,
+                        message: message,
+                        type: type,
+                        timestamp: new Date().toLocaleString('zh-TW')
+                    };
+
+                    console.log('一般郵件參數:', templateParams);
+
+                    const response = await emailjs.send(
+                        'service_wqepdk5',
+                        'template_gjqm3nz',
+                        templateParams
+                    );
+
+                    console.log('✅ 一般郵件發送成功！');
+                    return true;
+                    
+                } catch (error) {
+                    console.error('❌ 一般郵件發送失敗:', error);
+                    return false;
+                }
+            }
+
+            // 其他方法保持不變...
+            async changeWeek(weeks) {
+                const newDate = new Date(this.currentWeekStart);
+                newDate.setDate(newDate.getDate() + (weeks * 7));
+                
+                const maxDate = new Date();
+                maxDate.setMonth(maxDate.getMonth() + 2);
+                
+                if (newDate > maxDate && weeks > 0) {
+                    this.showMessage('只能預約兩個月內的時段', 'warning');
+                    return;
+                }
+                
+                this.currentWeekStart = newDate;
+                await this.renderTimelineCalendar();
+            }
+
+            async goToToday() {
+                this.currentWeekStart = new Date(this.getWeekStartDate(new Date()));
+                await this.renderTimelineCalendar();
+            }
+
+            getWeekStartDate(date) {
+                const newDate = new Date(date);
+                const day = newDate.getDay();
+                const diff = newDate.getDate() - day + (day === 0 ? -6 : 1);
+                newDate.setDate(diff);
+                newDate.setHours(0, 0, 0, 0);
+                return newDate;
+            }
+
+            formatDate(date) {
+                const year = date.getFullYear();
+                const month = date.getMonth() + 1;
+                const day = date.getDate();
+                return `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+            }
+
+            formatDisplayDate(date) {
+                const month = date.getMonth() + 1;
+                const day = date.getDate();
+                const weekDays = ['日', '一', '二', '三', '四', '五', '六'];
+                const weekDay = weekDays[date.getDay()];
+                return `${month}/${day} 週${weekDay}`;
+            }
+
+            isPastDate(date) {
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                return date < today;
+            }
+
+            isWithinTwoMonths(date) {
+                const today = new Date();
+                const twoMonthsLater = new Date();
+                twoMonthsLater.setMonth(today.getMonth() + 2);
+                return date <= twoMonthsLater;
+            }
+
+            isPastTimeSlot(date, time) {
+                const now = new Date();
+                const [hours, minutes] = time.split(':').map(Number);
+                const slotDateTime = new Date(date);
+                slotDateTime.setHours(hours, minutes, 0, 0);
+                return slotDateTime < now;
+            }
+
+            getTypeText(type) {
+                const typeMap = {
+                    'fixed': '固定練團',
+                    'personal': '個人練習',
+                    'free': '自由練團'
+                };
+                return typeMap[type] || type;
+            }
+
+            getWeekOfMonth(date) {
+                const firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
+                const firstDayOfWeek = firstDay.getDay() || 7;
+                
+                const currentDate = date.getDate();
+                
+                const weekNumber = Math.ceil((currentDate + firstDayOfWeek - 1) / 7);
+                
+                return Math.min(weekNumber, 4);
+            }
+
+            getWeekDisplay(startDate) {
+                const endDate = new Date(startDate);
+                endDate.setDate(startDate.getDate() + 6);
+                
+                const startMonth = startDate.getMonth() + 1;
+                const endMonth = endDate.getMonth() + 1;
+                const startYear = startDate.getFullYear();
+                const endYear = endDate.getFullYear();
+                
+                if (startYear === endYear && startMonth === endMonth) {
+                    const weekNumber = this.getWeekOfMonth(startDate);
+                    const displayWeek = Math.min(weekNumber, 4);
+                    return `${startYear}年${startMonth}月 第${displayWeek}週`;
+                } 
+                else if (startYear === endYear) {
+                    const startWeek = this.getWeekOfMonth(startDate);
+                    const endWeek = this.getWeekOfMonth(endDate);
+                    const displayStartWeek = Math.min(startWeek, 4);
+                    const displayEndWeek = Math.min(endWeek, 4);
+                    return `${startYear}年${startMonth}月第${displayStartWeek}週-${endMonth}月第${displayEndWeek}週`;
+                }
+                else {
+                    const startWeek = this.getWeekOfMonth(startDate);
+                    const endWeek = this.getWeekOfMonth(endDate);
+                    const displayStartWeek = Math.min(startWeek, 4);
+                    const displayEndWeek = Math.min(endWeek, 4);
+                    return `${startYear}年${startMonth}月第${displayStartWeek}週-${endYear}年${endMonth}月第${displayEndWeek}週`;
+                }
+            }
+
+            async renderTimelineCalendar() {
+                console.log('開始渲染日曆...');
+                const startTime = Date.now();
+                
+                await this.loadBookingsToCache();
+                
+                const container = document.getElementById('timelineContainer');
+                container.innerHTML = '';
+                
+                const weekDisplay = document.getElementById('currentWeekDisplay');
+                if (weekDisplay) {
+                    weekDisplay.textContent = this.getWeekDisplay(this.currentWeekStart);
+                }
+                
+                const timeSlots = ['09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00'];
+                
+                const timeColumn = document.createElement('div');
+                timeColumn.className = 'time-column';
+                
+                const emptyHeader = document.createElement('div');
+                emptyHeader.className = 'time-slot-header';
+                emptyHeader.textContent = '時間';
+                timeColumn.appendChild(emptyHeader);
+                
+                timeSlots.forEach(time => {
+                    const timeHeader = document.createElement('div');
+                    timeHeader.className = 'time-slot-header';
+                    timeHeader.textContent = time;
+                    timeColumn.appendChild(timeHeader);
+                });
+                
+                container.appendChild(timeColumn);
+                
+                const daysContainer = document.createElement('div');
+                daysContainer.className = 'days-container';
+                
+                const weekDates = [];
+                for (let i = 0; i < 7; i++) {
+                    const date = new Date(this.currentWeekStart);
+                    date.setDate(this.currentWeekStart.getDate() + i);
+                    weekDates.push({
+                        date: date,
+                        dateStr: this.formatDate(date)
                     });
                 }
                 
-                timeSlotsContainer.appendChild(timeSlot);
-            });
-            
-            dayColumn.appendChild(timeSlotsContainer);
-            daysContainer.appendChild(dayColumn);
-        });
-        
-        container.appendChild(daysContainer);
-        
-        const endTime = Date.now();
-        console.log(`日曆渲染完成，耗時: ${endTime - startTime}ms`);
-    }
-
-    truncateText(text, maxLength) {
-        if (!text) return '';
-        if (text.length <= maxLength) return text;
-        return text.substring(0, maxLength) + '...';
-    }
-
-    openBookingModal(date, time) {
-        if (!this.currentUser || this.currentUser.status !== 'approved') {
-            this.showMessage('請先完成帳號審核才能預約', 'error');
-            return;
-        }
-
-        if (this.isPastTimeSlot(date, time)) {
-            this.showMessage('無法預約過去的時間段', 'error');
-            return;
-        }
-
-        const slotDate = new Date(date);
-        if (!this.isWithinTwoMonths(slotDate)) {
-            this.showMessage('只能預約兩個月內的時段', 'error');
-            return;
-        }
-
-        this.selectedDate = date;
-        this.selectedTime = time;
-        
-        const modal = document.getElementById('bookingModal');
-        const details = document.getElementById('bookingDetails');
-        
-        details.innerHTML = `
-            <p><strong>日期：</strong>${date}</p>
-            <p><strong>時間：</strong>${time}</p>
-        `;
-        
-        document.getElementById('bookingName').value = this.currentUser.realName || '';
-        document.getElementById('bookingNotes').value = '';
-        
-        modal.style.display = 'flex';
-    }
-
-    closeModal() {
-        document.getElementById('bookingModal').style.display = 'none';
-    }
-
-    // 管理員相關方法
-    async renderAdminPanel() {
-        if (!this.currentUser || !this.cloudStorage.isAdmin(this.currentUser)) return;
-        
-        const users = await this.cloudStorage.getAllUsers();
-        const bookings = await this.cloudStorage.getAllBookings();
-        const pendingUsers = await this.cloudStorage.getPendingUsers();
-        const today = new Date().toISOString().split('T')[0];
-        const todayBookings = bookings.filter(booking => booking.date === today && booking.status !== 'cancelled');
-
-        document.getElementById('totalUsers').textContent = users.length;
-        document.getElementById('pendingUsers').textContent = pendingUsers.length;
-        document.getElementById('totalBookings').textContent = bookings.filter(b => b.status !== 'cancelled').length;
-        document.getElementById('todayBookings').textContent = todayBookings.length;
-        
-        this.renderPendingUsers(pendingUsers);
-        this.renderTodayBookings(todayBookings);
-        this.renderAllBookings(bookings);
-        this.renderAllUsers(users);
-    }
-
-    renderPendingUsers(users) {
-        const container = document.getElementById('pendingUsersList');
-        container.innerHTML = '';
-        
-        if (users.length === 0) {
-            container.innerHTML = '<p>無待審核用戶</p>';
-            return;
-        }
-        
-        users.forEach(user => {
-            const userEl = document.createElement('div');
-            userEl.className = 'user-item';
-            userEl.innerHTML = `
-                <div class="user-info">
-                    <div><strong>姓名：</strong>${user.real_name}</div>
-                    <div><strong>學號：</strong>${user.student_id}</div>
-                    <div><strong>電子郵件：</strong>${user.email}</div>
-                    <div><strong>電話：</strong>${user.phone}</div>
-                </div>
-                <div class="user-actions">
-                    <button class="btn btn-success btn-sm" onclick="app.approveUser('${user.email}')">核准</button>
-                    <button class="btn btn-danger btn-sm" onclick="app.rejectUser('${user.email}')">拒絕</button>
-                </div>
-            `;
-            container.appendChild(userEl);
-        });
-    }
-
-    renderTodayBookings(bookings) {
-        const container = document.getElementById('todayBookingsList');
-        container.innerHTML = '';
-        
-        if (bookings.length === 0) {
-            container.innerHTML = '<p>今日無預約</p>';
-            return;
-        }
-        
-        bookings.forEach(booking => {
-            const bookingEl = document.createElement('div');
-            bookingEl.className = 'booking-item';
-            bookingEl.innerHTML = `
-                <div class="booking-info">
-                    <div><strong>名稱：</strong>${booking.name}</div>
-                    <div><strong>預約人：</strong>${booking.real_name} (${booking.user_email})</div>
-                    <div><strong>時間：</strong>${booking.time}</div>
-                    <div><strong>類型：</strong>${this.getTypeText(booking.type)}</div>
-                    <div><strong>備註：</strong>${booking.notes || '無'}</div>
-                </div>
-            `;
-            container.appendChild(bookingEl);
-        });
-    }
-
-    renderAllBookings(bookings) {
-        const container = document.getElementById('allBookingsList');
-        container.innerHTML = '';
-        
-        const activeBookings = bookings.filter(b => b.status !== 'cancelled');
-        
-        if (activeBookings.length === 0) {
-            container.innerHTML = '<p>無預約記錄</p>';
-            return;
-        }
-        
-        activeBookings.forEach(booking => {
-            const bookingEl = document.createElement('div');
-            bookingEl.className = 'booking-item';
-            bookingEl.innerHTML = `
-                <div class="booking-info">
-                    <div><strong>名稱：</strong>${booking.name}</div>
-                    <div><strong>預約人：</strong>${booking.real_name} (${booking.user_email})</div>
-                    <div><strong>日期：</strong>${booking.date}</div>
-                    <div><strong>時間：</strong>${booking.time}</div>
-                    <div><strong>類型：</strong>${this.getTypeText(booking.type)}</div>
-                    <div><strong>狀態：</strong>${booking.status}</div>
-                </div>
-                <div class="booking-actions">
-                    <button class="btn btn-danger btn-sm" onclick="app.deleteBooking('${booking.id}')">取消預約</button>
-                </div>
-            `;
-            container.appendChild(bookingEl);
-        });
-    }
-
-    renderAllUsers(users) {
-        const container = document.getElementById('allUsersList');
-        container.innerHTML = '';
-        
-        users.forEach(user => {
-            const userEl = document.createElement('div');
-            userEl.className = 'user-item';
-            userEl.innerHTML = `
-                <div class="user-info">
-                    <div><strong>姓名：</strong>${user.real_name}</div>
-                    <div><strong>學號：</strong>${user.student_id}</div>
-                    <div><strong>電子郵件：</strong>${user.email}</div>
-                    <div><strong>狀態：</strong><span class="status-${user.status}">${user.status}</span></div>
-                </div>
-            `;
-            container.appendChild(userEl);
-        });
-    }
-
-// 修改 approveUser 方法，加入郵件通知
-async approveUser(email) {
-    try {
-        // 先獲取用戶資料
-        const users = await this.cloudStorage.getAllUsers();
-        const userToApprove = users.find(user => user.email === email);
-        
-        if (!userToApprove) {
-            this.showMessage('找不到該用戶', 'error');
-            return;
-        }
-
-        // 核准用戶
-        await this.cloudStorage.approveUser(email);
-        
-        // 發送審核通過通知郵件
-        try {
-            await this.sendApprovalNotification(email, userToApprove);
-            this.showMessage('用戶已核准，並已發送通知郵件', 'success');
-        } catch (mailError) {
-            console.error('郵件發送失敗，但用戶已核准:', mailError);
-            this.showMessage('用戶已核准，但通知郵件發送失敗', 'warning');
-        }
-        
-        // 重新渲染管理員面板
-        await this.renderAdminPanel();
-        
-    } catch (error) {
-        this.showMessage('核准失敗：' + error.message, 'error');
-    }
-}
-
-// 修改 rejectUser 方法（可選）
-async rejectUser(email) {
-    try {
-        await this.cloudStorage.rejectUser(email);
-        
-        // 這裡可以添加拒絕通知的發送邏輯
-        // await this.sendRejectionNotification(email);
-        
-        this.showMessage('用戶已拒絕', 'success');
-        this.renderAdminPanel();
-    } catch (error) {
-        this.showMessage('拒絕失敗：' + error.message, 'error');
-    }
-}
-
-    async deleteBooking(bookingId) {
-        try {
-            await this.cloudStorage.cancelBooking(bookingId);
-            this.showMessage('預約已取消', 'success');
-            this.renderAdminPanel();
-            if (this.currentView === 'calendar') {
-                this.renderTimelineCalendar();
+                const now = new Date();
+                
+                weekDates.forEach(dayInfo => {
+                    const dayColumn = document.createElement('div');
+                    dayColumn.className = 'day-column';
+                    
+                    const dayHeader = document.createElement('div');
+                    dayHeader.className = 'day-header';
+                    dayHeader.innerHTML = `
+                        <div class="day-name">${this.formatDisplayDate(dayInfo.date)}</div>
+                        <div class="day-date">${dayInfo.dateStr}</div>
+                    `;
+                    dayColumn.appendChild(dayHeader);
+                    
+                    const timeSlotsContainer = document.createElement('div');
+                    timeSlotsContainer.className = 'time-slots';
+                    
+                    timeSlots.forEach(time => {
+                        const timeSlot = document.createElement('div');
+                        timeSlot.className = 'time-slot';
+                        
+                        const booking = this.getBookingFromCache(dayInfo.dateStr, time);
+                        const [hours, minutes] = time.split(':').map(Number);
+                        const slotDateTime = new Date(dayInfo.date);
+                        slotDateTime.setHours(hours, minutes, 0, 0);
+                        
+                        const isPast = slotDateTime < now;
+                        const isWithinTwoMonths = this.isWithinTwoMonths(dayInfo.date);
+                        
+                        if (booking) {
+                            timeSlot.className += ' booked';
+                            timeSlot.title = `已預約：${booking.name} (${booking.real_name}) - ${this.getTypeText(booking.type)}`;
+                            
+                            if (this.currentUser && booking.user_email === this.currentUser.email) {
+                                timeSlot.className += ' own-booking';
+                            }
+                            
+                            const bookingInfo = document.createElement('div');
+                            bookingInfo.className = 'booking-info';
+                            bookingInfo.innerHTML = `
+                                <div class="booking-name" title="${booking.name}">${this.truncateText(booking.name, 6)}</div>
+                                <div class="booking-type" title="${this.getTypeText(booking.type)}">${this.getTypeText(booking.type)}</div>
+                            `;
+                            timeSlot.appendChild(bookingInfo);
+                        } else if (isPast) {
+                            timeSlot.className += ' past';
+                            timeSlot.innerHTML = '<span class="status-text">已過期</span>';
+                            timeSlot.title = '此時間段已過期，無法預約';
+                        } else if (!isWithinTwoMonths) {
+                            timeSlot.className += ' future-limit';
+                            timeSlot.innerHTML = '<span class="status-text">不可預約</span>';
+                            timeSlot.title = '只能預約兩個月內的時段';
+                        } else {
+                            timeSlot.className += ' available';
+                            timeSlot.innerHTML = '<span class="status-text">可預約</span>';
+                            timeSlot.title = '點擊預約此時間段';
+                            timeSlot.addEventListener('click', () => {
+                                this.openBookingModal(dayInfo.dateStr, time);
+                            });
+                        }
+                        
+                        timeSlotsContainer.appendChild(timeSlot);
+                    });
+                    
+                    dayColumn.appendChild(timeSlotsContainer);
+                    daysContainer.appendChild(dayColumn);
+                });
+                
+                container.appendChild(daysContainer);
+                
+                const endTime = Date.now();
+                console.log(`日曆渲染完成，耗時: ${endTime - startTime}ms`);
             }
-        } catch (error) {
-            this.showMessage('取消預約失敗：' + error.message, 'error');
-        }
-    }
-}
 
-// 啟動應用程式
-const app = new BandRoomApp();
+            truncateText(text, maxLength) {
+                if (!text) return '';
+                if (text.length <= maxLength) return text;
+                return text.substring(0, maxLength) + '...';
+            }
+
+            openBookingModal(date, time) {
+                if (!this.currentUser || this.currentUser.status !== 'approved') {
+                    this.showMessage('請先完成帳號審核才能預約', 'error');
+                    return;
+                }
+
+                if (this.isPastTimeSlot(date, time)) {
+                    this.showMessage('無法預約過去的時間段', 'error');
+                    return;
+                }
+
+                const slotDate = new Date(date);
+                if (!this.isWithinTwoMonths(slotDate)) {
+                    this.showMessage('只能預約兩個月內的時段', 'error');
+                    return;
+                }
+
+                this.selectedDate = date;
+                this.selectedTime = time;
+                
+                const modal = document.getElementById('bookingModal');
+                const details = document.getElementById('bookingDetails');
+                
+                details.innerHTML = `
+                    <p><strong>日期：</strong>${date}</p>
+                    <p><strong>時間：</strong>${time}</p>
+                `;
+                
+                document.getElementById('bookingName').value = this.currentUser.realName || '';
+                document.getElementById('bookingNotes').value = '';
+                
+                modal.style.display = 'flex';
+            }
+
+            closeModal() {
+                document.getElementById('bookingModal').style.display = 'none';
+            }
+
+            // 管理員相關方法保持不變...
+            async renderAdminPanel() {
+                if (!this.currentUser || !this.cloudStorage.isAdmin(this.currentUser)) return;
+                
+                const users = await this.cloudStorage.getAllUsers();
+                const bookings = await this.cloudStorage.getAllBookings();
+                const pendingUsers = await this.cloudStorage.getPendingUsers();
+                const today = new Date().toISOString().split('T')[0];
+                const todayBookings = bookings.filter(booking => booking.date === today && booking.status !== 'cancelled');
+
+                document.getElementById('totalUsers').textContent = users.length;
+                document.getElementById('pendingUsers').textContent = pendingUsers.length;
+                document.getElementById('totalBookings').textContent = bookings.filter(b => b.status !== 'cancelled').length;
+                document.getElementById('todayBookings').textContent = todayBookings.length;
+                
+                this.renderPendingUsers(pendingUsers);
+                this.renderTodayBookings(todayBookings);
+                this.renderAllBookings(bookings);
+                this.renderAllUsers(users);
+            }
+
+            renderPendingUsers(users) {
+                const container = document.getElementById('pendingUsersList');
+                container.innerHTML = '';
+                
+                if (users.length === 0) {
+                    container.innerHTML = '<p>無待審核用戶</p>';
+                    return;
+                }
+                
+                users.forEach(user => {
+                    const userEl = document.createElement('div');
+                    userEl.className = 'user-item';
+                    userEl.innerHTML = `
+                        <div class="user-info">
+                            <div><strong>姓名：</strong>${user.real_name}</div>
+                            <div><strong>學號：</strong>${user.student_id}</div>
+                            <div><strong>電子郵件：</strong>${user.email}</div>
+                            <div><strong>電話：</strong>${user.phone}</div>
+                        </div>
+                        <div class="user-actions">
+                            <button class="btn btn-success btn-sm" onclick="app.approveUser('${user.email}')">核准</button>
+                            <button class="btn btn-danger btn-sm" onclick="app.rejectUser('${user.email}')">拒絕</button>
+                        </div>
+                    `;
+                    container.appendChild(userEl);
+                });
+            }
+
+            renderTodayBookings(bookings) {
+                const container = document.getElementById('todayBookingsList');
+                container.innerHTML = '';
+                
+                if (bookings.length === 0) {
+                    container.innerHTML = '<p>今日無預約</p>';
+                    return;
+                }
+                
+                bookings.forEach(booking => {
+                    const bookingEl = document.createElement('div');
+                    bookingEl.className = 'booking-item';
+                    bookingEl.innerHTML = `
+                        <div class="booking-info">
+                            <div><strong>名稱：</strong>${booking.name}</div>
+                            <div><strong>預約人：</strong>${booking.real_name} (${booking.user_email})</div>
+                            <div><strong>時間：</strong>${booking.time}</div>
+                            <div><strong>類型：</strong>${this.getTypeText(booking.type)}</div>
+                            <div><strong>備註：</strong>${booking.notes || '無'}</div>
+                        </div>
+                    `;
+                    container.appendChild(bookingEl);
+                });
+            }
+
+            renderAllBookings(bookings) {
+                const container = document.getElementById('allBookingsList');
+                container.innerHTML = '';
+                
+                const activeBookings = bookings.filter(b => b.status !== 'cancelled');
+                
+                if (activeBookings.length === 0) {
+                    container.innerHTML = '<p>無預約記錄</p>';
+                    return;
+                }
+                
+                activeBookings.forEach(booking => {
+                    const bookingEl = document.createElement('div');
+                    bookingEl.className = 'booking-item';
+                    bookingEl.innerHTML = `
+                        <div class="booking-info">
+                            <div><strong>名稱：</strong>${booking.name}</div>
+                            <div><strong>預約人：</strong>${booking.real_name} (${booking.user_email})</div>
+                            <div><strong>日期：</strong>${booking.date}</div>
+                            <div><strong>時間：</strong>${booking.time}</div>
+                            <div><strong>類型：</strong>${this.getTypeText(booking.type)}</div>
+                            <div><strong>狀態：</strong>${booking.status}</div>
+                        </div>
+                        <div class="booking-actions">
+                            <button class="btn btn-danger btn-sm" onclick="app.deleteBooking('${booking.id}')">取消預約</button>
+                        </div>
+                    `;
+                    container.appendChild(bookingEl);
+                });
+            }
+
+            renderAllUsers(users) {
+                const container = document.getElementById('allUsersList');
+                container.innerHTML = '';
+                
+                users.forEach(user => {
+                    const userEl = document.createElement('div');
+                    userEl.className = 'user-item';
+                    userEl.innerHTML = `
+                        <div class="user-info">
+                            <div><strong>姓名：</strong>${user.real_name}</div>
+                            <div><strong>學號：</strong>${user.student_id}</div>
+                            <div><strong>電子郵件：</strong>${user.email}</div>
+                            <div><strong>狀態：</strong><span class="status-${user.status}">${user.status}</span></div>
+                        </div>
+                    `;
+                    container.appendChild(userEl);
+                });
+            }
+
+            async approveUser(email) {
+                try {
+                    const users = await this.cloudStorage.getAllUsers();
+                    const userToApprove = users.find(user => user.email === email);
+                    
+                    if (!userToApprove) {
+                        this.showMessage('找不到該用戶', 'error');
+                        return;
+                    }
+
+                    await this.cloudStorage.approveUser(email);
+                    
+                    try {
+                        await this.sendApprovalNotification(email, userToApprove);
+                        this.showMessage('用戶已核准，並已發送通知郵件', 'success');
+                    } catch (mailError) {
+                        console.error('郵件發送失敗，但用戶已核准:', mailError);
+                        this.showMessage('用戶已核准，但通知郵件發送失敗', 'warning');
+                    }
+                    
+                    await this.renderAdminPanel();
+                    
+                } catch (error) {
+                    this.showMessage('核准失敗：' + error.message, 'error');
+                }
+            }
+
+            async rejectUser(email) {
+                try {
+                    await this.cloudStorage.rejectUser(email);
+                    this.showMessage('用戶已拒絕', 'success');
+                    this.renderAdminPanel();
+                } catch (error) {
+                    this.showMessage('拒絕失敗：' + error.message, 'error');
+                }
+            }
+
+            async deleteBooking(bookingId) {
+                try {
+                    await this.cloudStorage.cancelBooking(bookingId);
+                    this.showMessage('預約已取消', 'success');
+                    this.renderAdminPanel();
+                    if (this.currentView === 'calendar') {
+                        this.renderTimelineCalendar();
+                    }
+                } catch (error) {
+                    this.showMessage('取消預約失敗：' + error.message, 'error');
+                }
+            }
+        }
+
+        // 啟動應用程式
+        const app = new BandRoomApp();
     </script>
 </body>
 </html>
