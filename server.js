@@ -21,6 +21,7 @@ app.use(cors({
 }));
 
 // 處理 OPTIONS 請求
+app.use(express.json());
 app.options('*', cors());
 // 處理 preflight 請求
 app.options('*', cors());
