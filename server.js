@@ -5,16 +5,23 @@ require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 8080;
-
-// 中間件 - 修正 CORS
-app.use(express.json());
+app.use((req, res, next) => {
+    console.log('=== 收到請求 ===');
+    console.log('方法:', req.method);
+    console.log('來源:', req.headers.origin);
+    console.log('路徑:', req.path);
+    console.log('標頭:', req.headers);
+    next();
+});
 app.use(cors({
-    origin: 'https://statuesque-toffee-f52484.netlify.app',
+    origin: "*", // 允許所有來源
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
 
+// 處理 OPTIONS 請求
+app.options('*', cors());
 // 處理 preflight 請求
 app.options('*', cors());
 
