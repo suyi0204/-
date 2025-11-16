@@ -7,17 +7,17 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // 中間件
-app.use(cors());
-app.use(express.json());
-
-// Gmail SMTP 配置
-const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-        user: process.env.GMAIL_USER,
-        pass: process.env.GMAIL_APP_PASSWORD
-    }
-});
+app.use(cors({
+    origin: [
+        'http://localhost:3000',
+        'http://127.0.0.1:3000',
+        'https://statuesque-toffee-f52484.netlify.app',
+        'https://*.netlify.app'
+    ],
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
 
 // 測試 Gmail 連接
 transporter.verify((error, success) => {

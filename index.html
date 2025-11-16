@@ -1030,11 +1030,13 @@
 
         // Gmail SMTP 服務
         class GmailSMTPService {
-            constructor() {
-                // 這裡需要您設置 Gmail SMTP 的後端端點
-                this.apiEndpoint = 'http://localhost:3000/api/send-email'; // 需要您創建這個後端 API
-            }
-
+    constructor() {
+        // 使用完整的後端 URL
+        this.apiEndpoint = 'https://ample-unity-production.up.railway.app/api/send-email';
+        // 或者如果您有部署後端，使用實際的後端網址
+        // 如果還在本地開發，手機無法訪問 localhost
+    }
+}
             async sendEmail(emailData) {
                 try {
                     console.log('📧 發送郵件:', emailData);
