@@ -4,9 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>北商熱音社 - 練團室預約系統</title>
-    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <!-- 移除 EmailJS -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
+        /* 保持所有 CSS 樣式不變 */
         :root {
             --primary: #3b82f6;
             --primary-dark: #2563eb;
@@ -1027,6 +1028,116 @@
         const SUPABASE_URL = 'https://mpnntoqgzvfpxbvkdseq.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1wbm50b3FnenZmcHhidmtkc2VxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMyMjc5NzgsImV4cCI6MjA3ODgwMzk3OH0.XGGT6Hf8klN54uWJlBbn2_zydSoB3s4O92S-OdA9tX4';
 
+        // Gmail SMTP 服務
+        class GmailSMTPService {
+            constructor() {
+                // 這裡需要您設置 Gmail SMTP 的後端端點
+                this.apiEndpoint = 'http://localhost:3000/api/send-email'; // 需要您創建這個後端 API
+            }
+
+            async sendEmail(emailData) {
+                try {
+                    console.log('📧 發送郵件:', emailData);
+                    
+                    const response = await fetch(this.apiEndpoint, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(emailData)
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('郵件發送失敗');
+                    }
+
+                    const result = await response.json();
+                    console.log('✅ 郵件發送成功:', result);
+                    return true;
+                    
+                } catch (error) {
+                    console.error('❌ 郵件發送失敗:', error);
+                    return false;
+                }
+            }
+
+            // 發送管理員通知
+            async sendAdminNotification(type, data) {
+                let emailData = {
+                    to: '11056046@ntub.edu.tw',
+                    type: 'admin',
+                    notification_type: type,
+                    timestamp: new Date().toLocaleString('zh-TW'),
+                    system_url: window.location.origin
+                };
+
+                switch(type) {
+                    case 'user_registration':
+                        emailData.subject = `【新用戶註冊】${data.realName} 已完成註冊`;
+                        emailData.data = {
+                            real_name: data.realName,
+                            user_email: data.email,
+                            student_id: data.studentId,
+                            phone: data.phone
+                        };
+                        break;
+                        
+                    case 'new_booking':
+                        emailData.subject = `【新預約通知】${data.realName} 預約了練團室`;
+                        emailData.data = {
+                            real_name: data.realName,
+                            user_email: data.email,
+                            booking_date: data.bookingDate,
+                            booking_time: data.bookingTime,
+                            booking_type: data.bookingType,
+                            booking_name: data.bookingName,
+                            booking_notes: data.bookingNotes || '無'
+                        };
+                        break;
+                }
+
+                return await this.sendEmail(emailData);
+            }
+
+            // 發送用戶通知
+            async sendUserNotification(type, data) {
+                let emailData = {
+                    to: data.userEmail,
+                    type: 'user',
+                    notification_type: type,
+                    timestamp: new Date().toLocaleString('zh-TW'),
+                    system_url: window.location.origin
+                };
+
+                switch(type) {
+                    case 'approval_result':
+                        emailData.subject = `【帳號審核通知】${data.realName} - 北商熱音社`;
+                        emailData.data = {
+                            real_name: data.realName,
+                            student_id: data.studentId,
+                            approval_status: data.status,
+                            admin_notes: data.notes || ''
+                        };
+                        break;
+                        
+                    case 'booking_confirmation':
+                        emailData.subject = `【預約成功】${data.bookingDate} ${data.bookingTime} - ${data.bookingName}`;
+                        emailData.data = {
+                            real_name: data.realName,
+                            booking_date: data.bookingDate,
+                            booking_time: data.bookingTime,
+                            booking_type: data.bookingType,
+                            booking_name: data.bookingName,
+                            booking_notes: data.bookingNotes || '無',
+                            booking_id: data.bookingId || '系統生成中'
+                        };
+                        break;
+                }
+
+                return await this.sendEmail(emailData);
+            }
+        }
+
         // 雲端資料儲存（使用 Supabase）
         class SupabaseService {
             constructor() {
@@ -1300,10 +1411,8 @@
                 }
             }
 
-            // 新增：刪除用戶方法
             async deleteUser(email) {
                 try {
-                    // 先刪除該用戶的所有預約
                     const { error: bookingsError } = await this.supabase
                         .from('bookings')
                         .delete()
@@ -1311,7 +1420,6 @@
 
                     if (bookingsError) throw bookingsError;
 
-                    // 然後刪除用戶
                     const { data, error } = await this.supabase
                         .from('users')
                         .delete()
@@ -1333,6 +1441,7 @@
         }
 
         const supabaseService = new SupabaseService();
+        const emailService = new GmailSMTPService();
 
         class BandRoomApp {
             constructor() {
@@ -1346,8 +1455,6 @@
                 this.currentWeekStart = new Date(this.getWeekStartDate(new Date()));
                 this.bookingsCache = {};
                 this.securityQuestions = {};
-                
-                emailjs.init("GvMjujaAG9kS-mPCA");
                 
                 this.init();
             }
@@ -1627,21 +1734,21 @@
                     this.currentUser.phone = updatedUser.phone;
                     this.currentUser.status = updatedUser.status;
 
-                    const subject = `【用戶審核通知】${realName} 提交了個人資料`;
-                    const message = `新的用戶等待審核：
-
-姓名：${realName}
-學號：${studentId}
-電子郵件：${this.currentUser.email}
-電話：${phone}
-提交時間：${new Date().toLocaleString('zh-TW')}
-
-請前往管理後台進行審核。`;
-                    
-                    await this.sendEmailJSNotification(subject, message, 'user_approval');
+                    // 發送用戶註冊通知給管理員
+                    const emailSent = await emailService.sendAdminNotification('user_registration', {
+                        realName: realName,
+                        email: this.currentUser.email,
+                        studentId: studentId,
+                        phone: phone
+                    });
                     
                     localStorage.setItem('ntub_currentUser', JSON.stringify(this.currentUser));
-                    this.showMessage('個人資料已提交，等待管理員審核。已發送通知給管理員', 'success');
+                    
+                    if (emailSent) {
+                        this.showMessage('個人資料已提交，等待管理員審核。已發送通知給管理員', 'success');
+                    } else {
+                        this.showMessage('個人資料已提交，等待管理員審核。但通知發送失敗，請聯繫管理員', 'warning');
+                    }
                     
                 } catch (error) {
                     this.showMessage('更新失敗：' + error.message, 'error');
@@ -1756,29 +1863,35 @@
                     
                     console.log('預約創建成功，開始發送郵件...');
 
-                    const adminSubject = `【新預約通知】${this.currentUser.realName} 預約了練團室`;
-                    const adminMessage = `新的練團室預約資訊：
-
-預約人：${this.currentUser.realName} (${this.currentUser.email})
-日期：${this.selectedDate}
-時間：${this.selectedTime}
-類型：${this.getTypeText(this.selectedType)}
-團名/名稱：${name}
-備註：${notes || '無'}
-預約時間：${new Date().toLocaleString('zh-TW')}
-
-請前往管理後台查看詳細資訊。`;
-
+                    // 發送管理員通知
                     console.log('準備發送管理員通知...');
-                    await this.sendAdminNotification(adminSubject, adminMessage);
+                    const adminSent = await emailService.sendAdminNotification('new_booking', {
+                        realName: this.currentUser.realName,
+                        email: this.currentUser.email,
+                        bookingDate: bookingData.date,
+                        bookingTime: bookingData.time,
+                        bookingType: this.getTypeText(bookingData.type),
+                        bookingName: bookingData.name,
+                        bookingNotes: bookingData.notes
+                    });
                     
+                    // 發送用戶確認信
                     console.log('準備發送用戶確認信...');
-                    const userEmailSent = await this.sendUserBookingConfirmation(bookingData, name, notes);
+                    const userSent = await emailService.sendUserNotification('booking_confirmation', {
+                        userEmail: this.currentUser.email,
+                        realName: this.currentUser.realName,
+                        bookingDate: bookingData.date,
+                        bookingTime: bookingData.time,
+                        bookingType: this.getTypeText(bookingData.type),
+                        bookingName: bookingData.name,
+                        bookingNotes: bookingData.notes,
+                        bookingId: newBooking.id
+                    });
                     
-                    console.log('用戶郵件發送結果:', userEmailSent);
+                    console.log('郵件發送結果 - 管理員:', adminSent, '用戶:', userSent);
                     
                     this.closeModal();
-                    if (userEmailSent) {
+                    if (userSent) {
                         this.showMessage('預約成功！確認信已發送到您的信箱', 'success');
                     } else {
                         this.showMessage('預約成功！但確認信發送失敗，請截圖保存預約資訊', 'warning');
@@ -1788,113 +1901,6 @@
                 } catch (error) {
                     console.error('預約過程中出錯:', error);
                     this.showMessage(error.message, 'error');
-                }
-            }
-
-            async sendAdminNotification(subject, message) {
-                try {
-                    console.log('🔵 發送管理員通知...');
-                    
-                    const templateParams = {
-                        to_email: '11056046@ntub.edu.tw',
-                        subject: subject,
-                        message: message,
-                        type: 'admin_notification',
-                        real_name: this.currentUser.realName,
-                        user_email: this.currentUser.email,
-                        timestamp: new Date().toLocaleString('zh-TW')
-                    };
-
-                    console.log('管理員通知參數:', templateParams);
-                    console.log('使用模板: template_94pmhgs');
-
-                    const response = await emailjs.send(
-                        'service_wqepdk5',
-                        'template_94pmhgs',
-                        templateParams
-                    );
-
-                    console.log('✅ 管理員通知發送成功！');
-                    return true;
-                    
-                } catch (error) {
-                    console.error('❌ 管理員通知發送失敗:', error);
-                    return false;
-                }
-            }
-
-            async sendUserBookingConfirmation(bookingData, name, notes) {
-                try {
-                    console.log('🎯 發送用戶預約確認信...');
-                    console.log('用戶郵箱:', this.currentUser.email);
-                    
-                    const userSubject = `【預約成功】${this.selectedDate} ${this.selectedTime} - ${name} 練團室預約確認`;
-
-                    const templateParams = {
-                        to_email: this.currentUser.email,
-                        subject: userSubject,
-                        real_name: this.currentUser.realName,
-                        student_id: this.currentUser.studentId,
-                        user_email: this.currentUser.email,
-                        user_phone: this.currentUser.phone || '未提供',
-                        booking_date: this.selectedDate,
-                        booking_time: this.selectedTime,
-                        booking_type: this.getTypeText(this.selectedType),
-                        booking_name: name,
-                        booking_notes: notes || '無',
-                        timestamp: new Date().toLocaleString('zh-TW')
-                    };
-
-                    console.log('=== 用戶確認信詳細信息 ===');
-                    console.log('模板ID: template_gjqm3nz');
-                    console.log('收件人參數 (to_email):', templateParams.to_email);
-                    console.log('用戶真實郵箱:', this.currentUser.email);
-                    console.log('主題:', templateParams.subject);
-                    console.log('========================');
-
-                    const response = await emailjs.send(
-                        'service_wqepdk5',
-                        'template_gjqm3nz',
-                        templateParams
-                    );
-
-                    console.log('✅ 用戶確認信發送成功！');
-                    console.log('回應狀態:', response.status);
-                    return true;
-                    
-                } catch (error) {
-                    console.error('❌ 用戶確認信發送失敗:');
-                    console.error('錯誤詳情:', error);
-                    return false;
-                }
-            }
-
-            async sendEmailJSNotification(subject, message, type, recipientEmail = null) {
-                try {
-                    console.log('發送一般郵件...');
-                    
-                    const templateParams = {
-                        to_email: recipientEmail || '11056046@ntub.edu.tw',
-                        subject: subject,
-                        message: message,
-                        type: type,
-                        timestamp: new Date().toLocaleString('zh-TW')
-                    };
-
-                    console.log('一般郵件參數:', templateParams);
-
-                    const response = await emailjs.send(
-                        'service_wqepdk5',
-                        'template_gjqm3nz',
-                        templateParams
-                    );
-
-                    console.log('✅ 一般郵件發送成功！');
-                    return true;
-                    
-                } catch (error) {
-                    console.error('❌ 一般郵件發送失敗:', error);
-                    return false;
                 }
             }
 
@@ -2325,83 +2331,38 @@
             }
 
             async approveUser(email) {
-                try {
-                    const users = await this.cloudStorage.getAllUsers();
-                    const userToApprove = users.find(user => user.email === email);
-                    
-                    if (!userToApprove) {
-                        this.showMessage('找不到該用戶', 'error');
-                        return;
-                    }
+    try {
+        const users = await this.cloudStorage.getAllUsers();
+        const userToApprove = users.find(user => user.email === email);
+        
+        if (!userToApprove) {
+            this.showMessage('找不到該用戶', 'error');
+            return;
+        }
 
-                    await this.cloudStorage.approveUser(email);
-                    
-                    try {
-                        await this.sendApprovalNotification(email, userToApprove);
-                        this.showMessage('用戶已核准，並已發送通知郵件。請通知用戶重新登入以啟用預約功能。', 'success');
-                    } catch (mailError) {
-                        console.error('郵件發送失敗，但用戶已核准:', mailError);
-                        this.showMessage('用戶已核准，但通知郵件發送失敗。請通知用戶重新登入以啟用預約功能。', 'warning');
-                    }
-                    
-                    await this.renderAdminPanel();
-                    
-                } catch (error) {
-                    this.showMessage('核准失敗：' + error.message, 'error');
-                }
-            }
-
-            async sendApprovalNotification(userEmail, userData) {
-                try {
-                    console.log('發送審核通過通知給:', userEmail);
-                    
-                    const templateParams = {
-                        to_email: userEmail,
-                        subject: `【帳號審核通過】${userData.real_name} - 北商熱音社練團室系統`,
-                        real_name: userData.real_name,
-                        student_id: userData.student_id,
-                        user_email: userEmail,
-                        system_url: window.location.origin,
-                        approval_time: new Date().toLocaleString('zh-TW'),
-                        message: `親愛的 ${userData.real_name} 同學：
-
-恭喜！您的北商熱音社練團室預約系統帳號已通過審核。
-
-您的帳號資訊：
-- 姓名：${userData.real_name}
-- 學號：${userData.student_id}
-- 電子郵件：${userEmail}
-
-請重新登入系統以啟用預約功能：
-${window.location.origin}
-
-重新登入後，您將可以：
-✓ 預約練團室時段
-✓ 查看您的預約記錄
-✓ 管理您的個人資料
-
-如有任何問題，請聯繫管理員。
-
-祝您使用愉快！
-北商熱音社 管理團隊`
-                    };
-
-                    console.log('審核通過郵件參數:', templateParams);
-
-                    const response = await emailjs.send(
-                        'service_wqepdk5',
-                        'template_gjqm3nz',
-                        templateParams
-                    );
-
-                    console.log('✅ 審核通過通知郵件發送成功！');
-                    return true;
-                    
-                } catch (error) {
-                    console.error('❌ 審核通過通知發送失敗:', error);
-                    return false;
-                }
-            }
+        await this.cloudStorage.approveUser(email);
+        
+        try {
+            // 發送審核通過通知給用戶
+            await emailService.sendUserNotification('approval_result', {
+                userEmail: email,
+                realName: userToApprove.real_name,
+                studentId: userToApprove.student_id,
+                status: 'approved',
+                notes: '您的帳號已通過審核，請重新登入系統以啟用預約功能。'
+            });
+            this.showMessage('用戶已核准，並已發送通知郵件。請用戶重新登入以啟用預約功能。', 'success');
+        } catch (mailError) {
+            console.error('郵件發送失敗，但用戶已核准:', mailError);
+            this.showMessage('用戶已核准，但通知郵件發送失敗。請通知用戶重新登入以啟用預約功能。', 'warning');
+        }
+        
+        await this.renderAdminPanel();
+        
+    } catch (error) {
+        this.showMessage('核准失敗：' + error.message, 'error');
+    }
+}
 
             async rejectUser(email) {
                 try {
@@ -2413,7 +2374,6 @@ ${window.location.origin}
                 }
             }
 
-            // 新增：刪除用戶方法
             async deleteUser(email) {
                 if (!confirm('確定要刪除此用戶嗎？此操作將同時刪除該用戶的所有預約記錄，且無法復原！')) {
                     return;

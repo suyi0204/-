@@ -10,7 +10,7 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
-// Gmail SMTP 配置 - 修正這裡！
+// Gmail SMTP 配置
 const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
@@ -150,7 +150,8 @@ function generateEmailContent(type, notification_type, data) {
                     <div style="${statusStyle} padding: 15px; border-radius: 6px; margin: 15px 0;">
                         <p style="margin: 0 0 10px 0;"><strong>您的帳號審核結果：${statusText}</strong></p>
                         ${data.approval_status === 'approved' ? 
-                            '<p style="margin: 0;">恭喜！您的帳號已通過審核，現在可以開始預約練團室。</p>' : 
+                            `<p style="margin: 0 0 10px 0;">恭喜！您的北商熱音社練團室預約系統帳號已通過審核。</p>
+                             <p style="margin: 0;"><strong>請重新登入系統以啟用預約功能。</strong></p>` : 
                             `<p style="margin: 0;">很抱歉，您的帳號審核未通過。</p>
                              ${data.admin_notes ? `<p style="margin: 10px 0 0 0;"><strong>原因：</strong>${data.admin_notes}</p>` : ''}
                              <p style="margin: 10px 0 0 0;">如有疑問，請聯繫管理員。</p>`
@@ -172,7 +173,14 @@ function generateEmailContent(type, notification_type, data) {
                 </div>
                 
                 ${data.approval_status === 'approved' ? `
-                <a href="${data.system_url}" style="display: inline-block; padding: 12px 24px; background: #3b82f6; color: white; text-decoration: none; border-radius: 6px; margin-top: 15px; font-weight: 600;">開始預約練團室</a>
+                <div style="background: rgba(16, 185, 129, 0.1); padding: 15px; border-radius: 6px; margin: 15px 0; border-left: 4px solid #10b981;">
+                    <p style="margin: 0 0 10px 0;"><strong>重要提醒：</strong></p>
+                    <p style="margin: 0 0 5px 0;">✓ 請重新登入系統以啟用預約功能</p>
+                    <p style="margin: 0 0 5px 0;">✓ 登入後即可開始預約練團室時段</p>
+                    <p style="margin: 0;">✓ 如有任何問題，請聯繫管理員</p>
+                </div>
+                
+                <a href="${data.system_url}" style="display: inline-block; padding: 12px 24px; background: #3b82f6; color: white; text-decoration: none; border-radius: 6px; margin-top: 15px; font-weight: 600;">重新登入系統</a>
                 ` : ''}
             ` + baseFooter;
         } else if (notification_type === 'booking_confirmation') {
