@@ -5,86 +5,104 @@ require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 8080;
+
+// 中間件
 app.use((req, res, next) => {
     console.log('=== 收到請求 ===');
     console.log('方法:', req.method);
     console.log('來源:', req.headers.origin);
     console.log('路徑:', req.path);
-    console.log('標頭:', req.headers);
     next();
 });
+
 app.use(cors({
-    origin: "*", // 允許所有來源
+    origin: "*",
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
 
-// 處理 OPTIONS 請求
 app.use(express.json());
+
+// 處理 OPTIONS 請求
 app.use((req, res, next) => {
-    // 設定所有 CORS 標頭
     res.header('Access-Control-Allow-Origin', '*');
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
     res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
     
-    // 如果是 OPTIONS 請求，直接回應
     if (req.method === 'OPTIONS') {
         return res.status(200).end();
     }
-    
     next();
 });
 
-// Office 365 SMTP 配置
-const transporter = nodemailer.createTransport({
-    host: 'smtp.office365.com',
-    port: 587,
-    secure: false,
-    auth: {
-        user: process.env.GMAIL_USER || '11056046@ntub.edu.tw',
-        pass: process.env.GMAIL_APP_PASSWORD || 'owym cjvw hsct jarf'
-    },
-    tls: {
-        ciphers: 'SSLv3',
-        rejectUnauthorized: false
-    }
-});
+// ✅ 修正：使用 Gmail SMTP 配置
+const createTransporter = () => {
+    return nodemailer.createTransport({
+        host: 'smtp.gmail.com',
+        port: 587,
+        secure: false, // 對於 587 端口設為 false
+        auth: {
+            user: process.env.GMAIL_USER,
+            pass: process.env.GMAIL_APP_PASSWORD
+        },
+        connectionTimeout: 30000, // 30秒連線超時
+        greetingTimeout: 30000,   // 30秒問候超時
+        socketTimeout: 60000,     // 60秒socket超時
+        tls: {
+            rejectUnauthorized: false // 允許自簽名證書
+        }
+    });
+};
 
-// 其餘程式碼保持不變...
-
-// 測試郵件連接
-transporter.verify((error, success) => {
-    if (error) {
-        console.log('❌ 郵件伺服器連接失敗:', error);
-    } else {
-        console.log('✅ 郵件伺服器連接成功，準備發送郵件');
+// ✅ 改良的郵件伺服器測試函數
+const testEmailConnection = async () => {
+    console.log('🔧 開始測試郵件伺服器連接...');
+    
+    try {
+        const transporter = createTransporter();
         
-        // 測試發送一封郵件
+        // 測試連接
+        await transporter.verify();
+        console.log('✅ 郵件伺服器連接成功');
+
+        // 測試發送郵件
         const testMail = {
-            from: '11056046@ntub.edu.tw',
-            to: '11056046@ntub.edu.tw',
-            subject: '📧 北商熱音社郵件服務測試',
+            from: process.env.GMAIL_USER,
+            to: process.env.GMAIL_USER, // 發給自己測試
+            subject: '📧 北商熱音社郵件服務測試 - Railway',
             html: `
                 <div style="font-family: Arial, sans-serif; padding: 20px;">
                     <h2 style="color: #3b82f6;">北商熱音社郵件服務測試</h2>
-                    <p>這是一封測試郵件，表示您的郵件服務已正常運作！</p>
-                    <p>時間：${new Date().toLocaleString('zh-TW')}</p>
+                    <p>這是一封測試郵件，表示您的郵件服務已在 Railway 正常運作！</p>
+                    <p><strong>時間：</strong>${new Date().toLocaleString('zh-TW')}</p>
+                    <p><strong>環境：</strong>Railway 部署</p>
+                    <p><strong>SMTP：</strong>Gmail</p>
                 </div>
             `
         };
-        
-        transporter.sendMail(testMail, (err, info) => {
-            if (err) {
-                console.log('❌ 測試郵件發送失敗:', err);
-            } else {
-                console.log('✅ 測試郵件發送成功:', info.response);
-            }
-        });
-    }
-});
 
-// 其餘的程式碼保持不變...
+        const info = await transporter.sendMail(testMail);
+        console.log('✅ 測試郵件發送成功:', info.messageId);
+        console.log('📧 測試郵件已發送至:', process.env.GMAIL_USER);
+        
+    } catch (error) {
+        console.error('❌ 郵件伺服器連接失敗:', error.message);
+        console.error('🔧 錯誤詳情:', {
+            code: error.code,
+            command: error.command
+        });
+        
+        // 定期重試連接
+        setTimeout(testEmailConnection, 30000); // 30秒後重試
+    }
+};
+
+// ✅ 改良的郵件發送函數
+const sendEmail = async (mailOptions) => {
+    const transporter = createTransporter();
+    return await transporter.sendMail(mailOptions);
+};
 
 // 郵件模板函數（保持不變）
 function generateEmailContent(type, notification_type, data) {
@@ -299,7 +317,7 @@ function generateEmailContent(type, notification_type, data) {
     return { subject, html };
 }
 
-// 郵件發送 API
+// ✅ 改良的郵件發送 API
 app.post('/api/send-email', async (req, res) => {
     try {
         const { to, type, notification_type, data } = req.body;
@@ -317,7 +335,7 @@ app.post('/api/send-email', async (req, res) => {
         console.log('📝 郵件內容生成完成，收件人:', to);
 
         const mailOptions = {
-            from: '11056046@ntub.edu.tw',
+            from: process.env.GMAIL_USER, // ✅ 使用環境變數
             to: to,
             subject: emailContent.subject,
             html: emailContent.html
@@ -325,8 +343,8 @@ app.post('/api/send-email', async (req, res) => {
 
         console.log('🔄 開始發送郵件...');
 
-        // 發送郵件
-        const result = await transporter.sendMail(mailOptions);
+        // 使用改良的發送函數
+        const result = await sendEmail(mailOptions);
         
         console.log('✅ 郵件發送成功:', {
             messageId: result.messageId,
@@ -361,7 +379,9 @@ app.get('/api/health', (req, res) => {
     res.json({ 
         status: 'OK', 
         service: '北商熱音社郵件服務',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        environment: 'Railway',
+        emailService: 'Gmail SMTP'
     });
 });
 
@@ -370,5 +390,9 @@ app.listen(PORT, () => {
     console.log(`✅ 伺服器啟動成功，端口：${PORT}`);
     console.log(`📧 郵件 API 端點：http://localhost:${PORT}/api/send-email`);
     console.log(`❤️  健康檢查：http://localhost:${PORT}/api/health`);
-    console.log(`📨 發件人：11056046@ntub.edu.tw`);
+    console.log(`📨 發件人：${process.env.GMAIL_USER}`);
+    console.log(`🌐 環境：Railway`);
+    
+    // 啟動郵件伺服器測試
+    setTimeout(testEmailConnection, 5000); // 5秒後開始測試
 });
