@@ -22,9 +22,19 @@ app.use(cors({
 
 // 處理 OPTIONS 請求
 app.use(express.json());
-app.options('*', cors());
-// 處理 preflight 請求
-app.options('*', cors());
+app.use((req, res, next) => {
+    // 設定所有 CORS 標頭
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+    
+    // 如果是 OPTIONS 請求，直接回應
+    if (req.method === 'OPTIONS') {
+        return res.status(200).end();
+    }
+    
+    next();
+});
 
 // Office 365 SMTP 配置
 const transporter = nodemailer.createTransport({
