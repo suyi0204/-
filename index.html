@@ -1655,14 +1655,14 @@ async updateUser(email, userData) {
                     document.getElementById('adminNav').classList.remove('hidden');
                 }
             }
-
+            
             async handleSignup(e) {
                 e.preventDefault();
                 const email = document.getElementById('signupEmail').value;
                 const password = document.getElementById('signupPassword').value;
                 const confirmPassword = document.getElementById('signupConfirmPassword').value;
                 const securityAnswer = document.getElementById('signupSecurityAnswer').value;
-
+                
                 if (!this.validateSecurityAnswer('signup', securityAnswer)) {
                     this.showMessage('安全驗證答案錯誤', 'error');
                     this.generateSecurityQuestions();

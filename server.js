@@ -7,6 +7,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // 中間件
+app.use(express.json());
 app.use(cors({
     origin: [
         'http://localhost:3000',
@@ -19,17 +20,57 @@ app.use(cors({
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-// 測試 Gmail 連接
+// Office 365 SMTP 配置
+const transporter = nodemailer.createTransporter({
+    host: 'smtp.office365.com',
+    port: 587,
+    secure: false, // 使用 STARTTLS
+    auth: {
+        user: '11056046@ntub.edu.tw',
+        pass: 'owym cjvw hsct jarf'
+    },
+    tls: {
+        ciphers: 'SSLv3',
+        rejectUnauthorized: false
+    },
+    debug: true, // 開啟偵錯模式
+    logger: true
+});
+
+// 測試郵件連接
 transporter.verify((error, success) => {
     if (error) {
-        console.log('❌ Gmail 連接失敗:', error);
+        console.log('❌ 郵件伺服器連接失敗:', error);
     } else {
-        console.log('✅ Gmail 連接成功，準備發送郵件');
+        console.log('✅ 郵件伺服器連接成功，準備發送郵件');
+        
+        // 測試發送一封郵件
+        const testMail = {
+            from: '11056046@ntub.edu.tw',
+            to: '11056046@ntub.edu.tw',
+            subject: '📧 北商熱音社郵件服務測試',
+            html: `
+                <div style="font-family: Arial, sans-serif; padding: 20px;">
+                    <h2 style="color: #3b82f6;">北商熱音社郵件服務測試</h2>
+                    <p>這是一封測試郵件，表示您的郵件服務已正常運作！</p>
+                    <p>時間：${new Date().toLocaleString('zh-TW')}</p>
+                </div>
+            `
+        };
+        
+        transporter.sendMail(testMail, (err, info) => {
+            if (err) {
+                console.log('❌ 測試郵件發送失敗:', err);
+            } else {
+                console.log('✅ 測試郵件發送成功:', info.response);
+            }
+        });
     }
 });
 
-// 郵件模板函數
+// 郵件模板函數（保持不變）
 function generateEmailContent(type, notification_type, data) {
+    // ... 您原有的郵件模板程式碼保持不變
     let subject = '';
     let html = '';
 
@@ -51,7 +92,6 @@ function generateEmailContent(type, notification_type, data) {
         </div>
     `;
 
-    // 定義網站網址
     const websiteUrl = 'https://statuesque-toffee-f52484.netlify.app/';
     const adminUrl = 'https://statuesque-toffee-f52484.netlify.app/';
 
@@ -91,7 +131,6 @@ function generateEmailContent(type, notification_type, data) {
                     <strong>請注意：</strong>新用戶需要通過審核才能使用預約功能。
                 </div>
                 
-                <!-- 管理員後台按鈕 -->
                 <a href="${adminUrl}" style="display: inline-block; padding: 12px 24px; background: #3b82f6; color: white; text-decoration: none; border-radius: 6px; margin-top: 15px; font-weight: 600;">前往管理後台</a>
             ` + baseFooter;
         } else if (notification_type === 'new_booking') {
@@ -111,7 +150,7 @@ function generateEmailContent(type, notification_type, data) {
                         <div style="font-weight: 600; width: 120px; color: #64748b;">日期：</div>
                         <div style="flex: 1;">${data.booking_date}</div>
                     </div>
-                    <div style="display: flex; margin-bottom: 10file:///C:/Users/suyi1/AppData/Local/Temp/8c1d9c7a.tmp.htmlpx;">
+                    <div style="display: flex; margin-bottom: 10px;">
                         <div style="font-weight: 600; width: 120px; color: #64748b;">時間：</div>
                         <div style="flex: 1;">${data.booking_time}</div>
                     </div>
@@ -135,7 +174,6 @@ function generateEmailContent(type, notification_type, data) {
                     </div>
                 </div>
                 
-                <!-- 管理員後台按鈕 -->
                 <a href="${adminUrl}" style="display: inline-block; padding: 12px 24px; background: #3b82f6; color: white; text-decoration: none; border-radius: 6px; margin-top: 15px; font-weight: 600;">前往管理後台</a>
             ` + baseFooter;
         }
@@ -186,7 +224,6 @@ function generateEmailContent(type, notification_type, data) {
                     <p style="margin: 0;">✓ 如有任何問題，請聯繫管理員</p>
                 </div>
                 
-                <!-- 用戶重新登入按鈕 -->
                 <a href="${websiteUrl}" style="display: inline-block; padding: 12px 24px; background: #3b82f6; color: white; text-decoration: none; border-radius: 6px; margin-top: 15px; font-weight: 600;">重新登入系統</a>
                 ` : ''}
             ` + baseFooter;
@@ -236,7 +273,6 @@ function generateEmailContent(type, notification_type, data) {
                     <p style="margin: 0;"><strong>請注意：</strong>請準時到達練團室，如有變動請提前取消預約。</p>
                 </div>
                 
-                <!-- 用戶查看預約按鈕 -->
                 <a href="${websiteUrl}" style="display: inline-block; padding: 12px 24px; background: #3b82f6; color: white; text-decoration: none; border-radius: 6px; margin-top: 15px; font-weight: 600;">查看我的預約</a>
             ` + baseFooter;
         }
@@ -245,7 +281,6 @@ function generateEmailContent(type, notification_type, data) {
     return { subject, html };
 }
 
-// 郵件發送 API
 // 郵件發送 API
 app.post('/api/send-email', async (req, res) => {
     try {
@@ -258,22 +293,13 @@ app.post('/api/send-email', async (req, res) => {
             timestamp: new Date().toISOString()
         });
 
-        // 檢查 Gmail 配置
-        if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
-            console.error('❌ Gmail 環境變數未設置');
-            return res.status(500).json({ 
-                success: false, 
-                error: '郵件服務配置錯誤' 
-            });
-        }
-
         // 生成郵件內容
         const emailContent = generateEmailContent(type, notification_type, data);
         
         console.log('📝 郵件內容生成完成，收件人:', to);
 
         const mailOptions = {
-            from: process.env.GMAIL_USER,
+            from: '11056046@ntub.edu.tw',
             to: to,
             subject: emailContent.subject,
             html: emailContent.html
@@ -326,4 +352,5 @@ app.listen(PORT, () => {
     console.log(`✅ 伺服器啟動成功，端口：${PORT}`);
     console.log(`📧 郵件 API 端點：http://localhost:${PORT}/api/send-email`);
     console.log(`❤️  健康檢查：http://localhost:${PORT}/api/health`);
+    console.log(`📨 發件人：11056046@ntub.edu.tw`);
 });
