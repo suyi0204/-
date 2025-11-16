@@ -584,6 +584,15 @@
             border-color: var(--primary);
         }
 
+        /* 手機版日曆優化 */
+        .mobile-time-display {
+            display: none;
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--text-dark);
+            margin-bottom: 4px;
+        }
+
         /* 響應式設計 */
         @media (max-width: 768px) {
             .nav-toggle {
@@ -656,25 +665,78 @@
                 padding: 1.5rem;
             }
 
+            /* 手機版日曆重新設計 */
             .timeline-container {
                 flex-direction: column;
                 min-height: auto;
             }
 
             .time-column {
-                width: 100%;
-                height: 60px;
-                display: flex;
-                overflow-x: auto;
-            }
-
-            .time-slot-header {
-                min-width: 80px;
-                height: 60px;
+                display: none;
             }
 
             .days-container {
                 flex-direction: column;
+            }
+
+            .day-column {
+                margin-bottom: 1rem;
+                border: 1px solid var(--gray);
+                border-radius: var(--radius);
+            }
+
+            .day-header {
+                background: var(--primary);
+                color: white;
+                border-radius: var(--radius) var(--radius) 0 0;
+            }
+
+            .time-slot {
+                height: 70px;
+                padding: 8px;
+                border-bottom: 1px solid var(--gray-light);
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: flex-start;
+            }
+
+            .mobile-time-display {
+                display: block;
+                font-size: 0.8rem;
+                font-weight: 600;
+                color: var(--text-dark);
+                margin-bottom: 4px;
+            }
+
+            /* 優化手機版預約資訊顯示 */
+            .booking-info {
+                width: 100%;
+                padding: 4px;
+                text-align: left;
+            }
+
+            .booking-name {
+                font-size: 0.75rem;
+                margin-bottom: 2px;
+                white-space: normal;
+                overflow: visible;
+                text-overflow: unset;
+                line-height: 1.2;
+            }
+
+            .booking-type {
+                font-size: 0.7rem;
+                white-space: normal;
+                overflow: visible;
+                text-overflow: unset;
+                line-height: 1.2;
+            }
+
+            .status-text {
+                font-size: 0.75rem;
+                text-align: left;
+                width: 100%;
             }
 
             .user-info, .booking-info {
@@ -685,26 +747,9 @@
                 grid-template-columns: 1fr;
             }
 
-            .time-slot {
-                height: 50px;
-                font-size: 0.7rem;
-            }
-            
-            .booking-name {
-                font-size: 0.6rem;
-            }
-            
-            .booking-type {
-                font-size: 0.55rem;
-            }
-            
             .day-header,
             .time-slot-header {
                 height: 45px;
-            }
-            
-            .status-text {
-                font-size: 0.7rem;
             }
 
             /* 確保通知徽章在手機上可見 */
@@ -716,6 +761,21 @@
         /* 當選單打開時防止背景滾動 */
         body.menu-open {
             overflow: hidden;
+        }
+
+        /* 安全驗證樣式 */
+        .security-check {
+            margin-bottom: 1rem;
+        }
+
+        .rate-limit-message {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid var(--error);
+            color: var(--error);
+            padding: 10px;
+            border-radius: var(--radius);
+            text-align: center;
+            margin-bottom: 1rem;
         }
     </style>
 </head>
@@ -791,6 +851,13 @@
                         <label class="form-label">密碼</label>
                         <input type="password" class="form-control" id="loginPassword" required>
                     </div>
+                    <div class="security-check">
+                        <div class="form-group">
+                            <label class="form-label">安全驗證</label>
+                            <div id="securityQuestion" style="margin-bottom: 0.5rem; font-weight: 600;"></div>
+                            <input type="text" class="form-control" id="securityAnswer" placeholder="請輸入計算結果" required>
+                        </div>
+                    </div>
                     <button type="submit" class="btn btn-primary">登入</button>
                 </form>
                 <p style="margin-top: 1rem; text-align: center;">
@@ -810,11 +877,18 @@
                     </div>
                     <div class="form-group">
                         <label class="form-label">密碼</label>
-                        <input type="password" class="form-control" id="signupPassword" required>
+                        <input type="password" class="form-control" id="signupPassword" required minlength="6">
                     </div>
                     <div class="form-group">
                         <label class="form-label">確認密碼</label>
                         <input type="password" class="form-control" id="signupConfirmPassword" required>
+                    </div>
+                    <div class="security-check">
+                        <div class="form-group">
+                            <label class="form-label">安全驗證</label>
+                            <div id="signupSecurityQuestion" style="margin-bottom: 0.5rem; font-weight: 600;"></div>
+                            <input type="text" class="form-control" id="signupSecurityAnswer" placeholder="請輸入計算結果" required>
+                        </div>
                     </div>
                     <button type="submit" class="btn btn-primary">註冊</button>
                 </form>
@@ -835,11 +909,11 @@
                     </div>
                     <div class="form-group">
                         <label class="form-label">學號</label>
-                        <input type="text" class="form-control" id="studentId" required>
+                        <input type="text" class="form-control" id="studentId" required pattern="[0-9]{8}" title="請輸入8位數字學號">
                     </div>
                     <div class="form-group">
                         <label class="form-label">聯絡電話</label>
-                        <input type="tel" class="form-control" id="phone" required>
+                        <input type="tel" class="form-control" id="phone" required pattern="[0-9]{10}" title="請輸入10位數字電話號碼">
                     </div>
                     <button type="submit" class="btn btn-primary">提交資料等待審核</button>
                 </form>
@@ -957,10 +1031,36 @@
         class SupabaseService {
             constructor() {
                 this.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                this.rateLimit = new Map();
             }
 
-            // 用戶登入
+            checkRateLimit(identifier, limit = 5, windowMs = 60000) {
+                const now = Date.now();
+                const key = `${identifier}_${Math.floor(now / windowMs)}`;
+                
+                if (!this.rateLimit.has(key)) {
+                    this.rateLimit.set(key, 0);
+                }
+                
+                const current = this.rateLimit.get(key);
+                if (current >= limit) {
+                    return false;
+                }
+                
+                this.rateLimit.set(key, current + 1);
+                
+                setTimeout(() => {
+                    this.rateLimit.delete(key);
+                }, windowMs);
+                
+                return true;
+            }
+
             async login(email, password) {
+                if (!this.checkRateLimit(`login_${email}`, 5, 60000)) {
+                    throw new Error('嘗試次數過多，請稍後再試');
+                }
+
                 try {
                     const { data, error } = await this.supabase
                         .from('users')
@@ -977,10 +1077,21 @@
                 }
             }
 
-            // 用戶註冊
             async signup(userData) {
+                if (!this.checkRateLimit(`signup_${userData.email}`, 3, 60000)) {
+                    throw new Error('註冊嘗試次數過多，請稍後再試');
+                }
+
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailRegex.test(userData.email)) {
+                    throw new Error('請輸入有效的電子郵件地址');
+                }
+
+                if (userData.password.length < 6) {
+                    throw new Error('密碼長度至少需要6個字符');
+                }
+
                 try {
-                    // 檢查是否已註冊
                     const { data: existingUser } = await this.supabase
                         .from('users')
                         .select('email')
@@ -1001,7 +1112,8 @@
                             phone: userData.phone || '',
                             status: 'pending',
                             avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80',
-                            is_admin: false
+                            is_admin: false,
+                            created_at: new Date().toISOString()
                         }])
                         .select()
                         .single();
@@ -1014,7 +1126,6 @@
                 }
             }
 
-            // 更新用戶資料
             async updateUser(email, userData) {
                 try {
                     const { data, error } = await this.supabase
@@ -1037,10 +1148,8 @@
                 }
             }
 
-            // 創建預約
             async createBooking(bookingData) {
                 try {
-                    // 檢查時段是否已被預約
                     const { data: existingBooking } = await this.supabase
                         .from('bookings')
                         .select('*')
@@ -1063,7 +1172,8 @@
                             type: bookingData.type,
                             name: bookingData.name,
                             notes: bookingData.notes,
-                            status: 'confirmed'
+                            status: 'confirmed',
+                            created_at: new Date().toISOString()
                         }])
                         .select()
                         .single();
@@ -1076,7 +1186,6 @@
                 }
             }
 
-            // 獲取所有預約
             async getAllBookings() {
                 try {
                     const { data, error } = await this.supabase
@@ -1093,7 +1202,6 @@
                 }
             }
 
-            // 獲取特定時段的預約
             async getBookingForTimeSlot(date, time) {
                 try {
                     const { data, error } = await this.supabase
@@ -1112,7 +1220,6 @@
                 }
             }
 
-            // 取消預約
             async cancelBooking(bookingId) {
                 try {
                     const { data, error } = await this.supabase
@@ -1130,7 +1237,6 @@
                 }
             }
 
-            // 獲取所有用戶
             async getAllUsers() {
                 try {
                     const { data, error } = await this.supabase
@@ -1145,7 +1251,6 @@
                 }
             }
 
-            // 獲取待審核用戶
             async getPendingUsers() {
                 try {
                     const { data, error } = await this.supabase
@@ -1161,7 +1266,6 @@
                 }
             }
 
-            // 核准用戶
             async approveUser(email) {
                 try {
                     const { data, error } = await this.supabase
@@ -1179,7 +1283,6 @@
                 }
             }
 
-            // 拒絕用戶
             async rejectUser(email) {
                 try {
                     const { data, error } = await this.supabase
@@ -1202,7 +1305,6 @@
             }
         }
 
-        // 初始化 Supabase 服務
         const supabaseService = new SupabaseService();
 
         class BandRoomApp {
@@ -1216,8 +1318,8 @@
                 this.currentView = 'home';
                 this.currentWeekStart = new Date(this.getWeekStartDate(new Date()));
                 this.bookingsCache = {};
+                this.securityQuestions = {};
                 
-                // 使用您找到的 Public Key
                 emailjs.init("GvMjujaAG9kS-mPCA");
                 
                 this.init();
@@ -1228,10 +1330,43 @@
                 this.checkLoginStatus();
                 this.showView('home');
                 this.loadHomeStats();
+                this.generateSecurityQuestions();
+            }
+
+            // 修復：添加缺失的方法
+            getWeekStartDate(date) {
+                const newDate = new Date(date);
+                const day = newDate.getDay();
+                const diff = newDate.getDate() - day + (day === 0 ? -6 : 1);
+                newDate.setDate(diff);
+                newDate.setHours(0, 0, 0, 0);
+                return newDate;
+            }
+
+            generateSecurityQuestions() {
+                const num1 = Math.floor(Math.random() * 10) + 1;
+                const num2 = Math.floor(Math.random() * 10) + 1;
+                const answer = num1 + num2;
+                
+                this.securityQuestions = {
+                    login: { question: `${num1} + ${num2} = ?`, answer: answer },
+                    signup: { question: `${num1} + ${num2} = ?`, answer: answer }
+                };
+                
+                const loginQuestion = document.getElementById('securityQuestion');
+                const signupQuestion = document.getElementById('signupSecurityQuestion');
+                
+                if (loginQuestion) loginQuestion.textContent = this.securityQuestions.login.question;
+                if (signupQuestion) signupQuestion.textContent = this.securityQuestions.signup.question;
+            }
+
+            validateSecurityAnswer(type, userAnswer) {
+                const question = this.securityQuestions[type];
+                if (!question) return false;
+                return parseInt(userAnswer) === question.answer;
             }
 
             setupEventListeners() {
-                // 漢堡選單點擊事件
                 document.getElementById('navToggle')?.addEventListener('click', (e) => {
                     e.preventDefault();
                     const navMenu = document.getElementById('navMenu');
@@ -1239,7 +1374,6 @@
                     document.body.classList.toggle('menu-open');
                 });
 
-                // 點擊其他地方關閉選單
                 document.addEventListener('click', (e) => {
                     const navMenu = document.getElementById('navMenu');
                     const navToggle = document.getElementById('navToggle');
@@ -1250,7 +1384,6 @@
                     }
                 });
 
-                // 點擊導航項目後關閉選單（針對手機版）
                 document.querySelectorAll('.nav-item').forEach(item => {
                     item.addEventListener('click', () => {
                         const navMenu = document.getElementById('navMenu');
@@ -1261,7 +1394,6 @@
                     });
                 });
 
-                // 現有的事件監聽器
                 document.addEventListener('click', (e) => {
                     if (e.target.matches('[data-view]')) {
                         e.preventDefault();
@@ -1304,6 +1436,10 @@
                     targetSection.classList.remove('hidden');
                 }
                 
+                if (viewName === 'login' || viewName === 'signup') {
+                    this.generateSecurityQuestions();
+                }
+                
                 switch(viewName) {
                     case 'calendar':
                         this.renderTimelineCalendar();
@@ -1319,38 +1455,6 @@
                     case 'profile':
                         this.loadProfileData();
                         break;
-                }
-            }
-
-            // 其他方法保持不變...
-            async sendApprovalNotification(userEmail, userData) {
-                try {
-                    console.log('發送審核通過通知給:', userEmail);
-                    
-                    const templateParams = {
-                        to_email: userEmail,
-                        subject: `【帳號審核通過】${userData.real_name} - 北商熱音社練團室系統`,
-                        real_name: userData.real_name,
-                        student_id: userData.student_id,
-                        user_email: userEmail,
-                        system_url: window.location.origin,
-                        approval_time: new Date().toLocaleString('zh-TW')
-                    };
-
-                    console.log('審核通過郵件參數:', templateParams);
-
-                    const response = await emailjs.send(
-                        'service_wqepdk5',
-                        'template_gjqm3nz',
-                        templateParams
-                    );
-
-                    console.log('✅ 審核通過通知郵件發送成功！');
-                    return true;
-                    
-                } catch (error) {
-                    console.error('❌ 審核通過通知發送失敗:', error);
-                    return false;
                 }
             }
 
@@ -1386,12 +1490,18 @@
                 }
             }
 
-            // 其他方法保持不變...
             async handleSignup(e) {
                 e.preventDefault();
                 const email = document.getElementById('signupEmail').value;
                 const password = document.getElementById('signupPassword').value;
                 const confirmPassword = document.getElementById('signupConfirmPassword').value;
+                const securityAnswer = document.getElementById('signupSecurityAnswer').value;
+
+                if (!this.validateSecurityAnswer('signup', securityAnswer)) {
+                    this.showMessage('安全驗證答案錯誤', 'error');
+                    this.generateSecurityQuestions();
+                    return;
+                }
 
                 if (password !== confirmPassword) {
                     this.showMessage('密碼確認不一致', 'error');
@@ -1433,6 +1543,13 @@
                 e.preventDefault();
                 const email = document.getElementById('loginEmail').value;
                 const password = document.getElementById('loginPassword').value;
+                const securityAnswer = document.getElementById('securityAnswer').value;
+
+                if (!this.validateSecurityAnswer('login', securityAnswer)) {
+                    this.showMessage('安全驗證答案錯誤', 'error');
+                    this.generateSecurityQuestions();
+                    return;
+                }
 
                 try {
                     const user = await this.cloudStorage.login(email, password);
@@ -1462,10 +1579,10 @@
                     }
                 } catch (error) {
                     this.showMessage(error.message, 'error');
+                    this.generateSecurityQuestions();
                 }
             }
 
-            // 其他方法保持不變...
             async handleProfileUpdate(e) {
                 e.preventDefault();
                 const realName = document.getElementById('realName').value;
@@ -1521,7 +1638,6 @@
                 this.showMessage('已成功登出', 'success');
             }
 
-            // 其他方法保持不變...
             loadProfileData() {
                 if (this.currentUser) {
                     document.getElementById('realName').value = this.currentUser.realName || '';
@@ -1545,7 +1661,6 @@
                 }
             }
 
-            // 日曆相關方法保持不變...
             getBookingKey(date, time) {
                 return `${date}_${time}`;
             }
@@ -1757,7 +1872,6 @@
                 }
             }
 
-            // 其他方法保持不變...
             async changeWeek(weeks) {
                 const newDate = new Date(this.currentWeekStart);
                 newDate.setDate(newDate.getDate() + (weeks * 7));
@@ -1777,15 +1891,15 @@
             async goToToday() {
                 this.currentWeekStart = new Date(this.getWeekStartDate(new Date()));
                 await this.renderTimelineCalendar();
-            }
-
-            getWeekStartDate(date) {
-                const newDate = new Date(date);
-                const day = newDate.getDay();
-                const diff = newDate.getDate() - day + (day === 0 ? -6 : 1);
-                newDate.setDate(diff);
-                newDate.setHours(0, 0, 0, 0);
-                return newDate;
+                
+                if (window.innerWidth <= 768) {
+                    const today = new Date();
+                    const todayStr = this.formatDate(today);
+                    const todayElement = document.querySelector(`[data-date="${todayStr}"]`);
+                    if (todayElement) {
+                        todayElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                }
             }
 
             formatDate(date) {
@@ -1889,23 +2003,26 @@
                 }
                 
                 const timeSlots = ['09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00'];
+                const isMobile = window.innerWidth <= 768;
                 
-                const timeColumn = document.createElement('div');
-                timeColumn.className = 'time-column';
-                
-                const emptyHeader = document.createElement('div');
-                emptyHeader.className = 'time-slot-header';
-                emptyHeader.textContent = '時間';
-                timeColumn.appendChild(emptyHeader);
-                
-                timeSlots.forEach(time => {
-                    const timeHeader = document.createElement('div');
-                    timeHeader.className = 'time-slot-header';
-                    timeHeader.textContent = time;
-                    timeColumn.appendChild(timeHeader);
-                });
-                
-                container.appendChild(timeColumn);
+                if (!isMobile) {
+                    const timeColumn = document.createElement('div');
+                    timeColumn.className = 'time-column';
+                    
+                    const emptyHeader = document.createElement('div');
+                    emptyHeader.className = 'time-slot-header';
+                    emptyHeader.textContent = '時間';
+                    timeColumn.appendChild(emptyHeader);
+                    
+                    timeSlots.forEach(time => {
+                        const timeHeader = document.createElement('div');
+                        timeHeader.className = 'time-slot-header';
+                        timeHeader.textContent = time;
+                        timeColumn.appendChild(timeHeader);
+                    });
+                    
+                    container.appendChild(timeColumn);
+                }
                 
                 const daysContainer = document.createElement('div');
                 daysContainer.className = 'days-container';
@@ -1925,6 +2042,7 @@
                 weekDates.forEach(dayInfo => {
                     const dayColumn = document.createElement('div');
                     dayColumn.className = 'day-column';
+                    dayColumn.setAttribute('data-date', dayInfo.dateStr);
                     
                     const dayHeader = document.createElement('div');
                     dayHeader.className = 'day-header';
@@ -1940,6 +2058,13 @@
                     timeSlots.forEach(time => {
                         const timeSlot = document.createElement('div');
                         timeSlot.className = 'time-slot';
+                        
+                        if (isMobile) {
+                            const timeDisplay = document.createElement('div');
+                            timeDisplay.className = 'mobile-time-display';
+                            timeDisplay.textContent = time;
+                            timeSlot.appendChild(timeDisplay);
+                        }
                         
                         const booking = this.getBookingFromCache(dayInfo.dateStr, time);
                         const [hours, minutes] = time.split(':').map(Number);
@@ -1960,21 +2085,30 @@
                             const bookingInfo = document.createElement('div');
                             bookingInfo.className = 'booking-info';
                             bookingInfo.innerHTML = `
-                                <div class="booking-name" title="${booking.name}">${this.truncateText(booking.name, 6)}</div>
+                                <div class="booking-name" title="${booking.name}">${this.truncateText(booking.name, isMobile ? 20 : 6)}</div>
                                 <div class="booking-type" title="${this.getTypeText(booking.type)}">${this.getTypeText(booking.type)}</div>
                             `;
                             timeSlot.appendChild(bookingInfo);
                         } else if (isPast) {
                             timeSlot.className += ' past';
-                            timeSlot.innerHTML = '<span class="status-text">已過期</span>';
+                            const statusText = document.createElement('div');
+                            statusText.className = 'status-text';
+                            statusText.textContent = '已過期';
+                            timeSlot.appendChild(statusText);
                             timeSlot.title = '此時間段已過期，無法預約';
                         } else if (!isWithinTwoMonths) {
                             timeSlot.className += ' future-limit';
-                            timeSlot.innerHTML = '<span class="status-text">不可預約</span>';
+                            const statusText = document.createElement('div');
+                            statusText.className = 'status-text';
+                            statusText.textContent = '不可預約';
+                            timeSlot.appendChild(statusText);
                             timeSlot.title = '只能預約兩個月內的時段';
                         } else {
                             timeSlot.className += ' available';
-                            timeSlot.innerHTML = '<span class="status-text">可預約</span>';
+                            const statusText = document.createElement('div');
+                            statusText.className = 'status-text';
+                            statusText.textContent = '可預約';
+                            timeSlot.appendChild(statusText);
                             timeSlot.title = '點擊預約此時間段';
                             timeSlot.addEventListener('click', () => {
                                 this.openBookingModal(dayInfo.dateStr, time);
@@ -2038,7 +2172,6 @@
                 document.getElementById('bookingModal').style.display = 'none';
             }
 
-            // 管理員相關方法保持不變...
             async renderAdminPanel() {
                 if (!this.currentUser || !this.cloudStorage.isAdmin(this.currentUser)) return;
                 
@@ -2186,6 +2319,37 @@
                     
                 } catch (error) {
                     this.showMessage('核准失敗：' + error.message, 'error');
+                }
+            }
+
+            async sendApprovalNotification(userEmail, userData) {
+                try {
+                    console.log('發送審核通過通知給:', userEmail);
+                    
+                    const templateParams = {
+                        to_email: userEmail,
+                        subject: `【帳號審核通過】${userData.real_name} - 北商熱音社練團室系統`,
+                        real_name: userData.real_name,
+                        student_id: userData.student_id,
+                        user_email: userEmail,
+                        system_url: window.location.origin,
+                        approval_time: new Date().toLocaleString('zh-TW')
+                    };
+
+                    console.log('審核通過郵件參數:', templateParams);
+
+                    const response = await emailjs.send(
+                        'service_wqepdk5',
+                        'template_gjqm3nz',
+                        templateParams
+                    );
+
+                    console.log('✅ 審核通過通知郵件發送成功！');
+                    return true;
+                    
+                } catch (error) {
+                    console.error('❌ 審核通過通知發送失敗:', error);
+                    return false;
                 }
             }
 
