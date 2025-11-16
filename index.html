@@ -1747,43 +1747,48 @@ async updateUser(email, userData) {
             }
 
             async handleProfileUpdate(e) {
-                e.preventDefault();
-                const realName = document.getElementById('realName').value;
-                const studentId = document.getElementById('studentId').value;
-                const phone = document.getElementById('phone').value;
+    e.preventDefault();
+    const realName = document.getElementById('realName').value;
+    const studentId = document.getElementById('studentId').value;
+    const phone = document.getElementById('phone').value;
 
-                try {
-                    const updatedUser = await this.cloudStorage.updateUser(this.currentUser.email, {
-                        realName: realName,
-                        studentId: studentId,
-                        phone: phone
-                    });
+    try {
+        const updatedUser = await this.cloudStorage.updateUser(this.currentUser.email, {
+            realName: realName,
+            studentId: studentId,
+            phone: phone
+        });
 
-                    this.currentUser.realName = updatedUser.real_name;
-                    this.currentUser.studentId = updatedUser.student_id;
-                    this.currentUser.phone = updatedUser.phone;
-                    this.currentUser.status = updatedUser.status;
+        this.currentUser.realName = updatedUser.real_name;
+        this.currentUser.studentId = updatedUser.student_id;
+        this.currentUser.phone = updatedUser.phone;
+        this.currentUser.status = updatedUser.status;
 
-                    // 發送用戶註冊通知給管理員
-                    const emailSent = await emailService.sendAdminNotification('user_registration', {
-                        realName: realName,
-                        email: this.currentUser.email,
-                        studentId: studentId,
-                        phone: phone
-                    });
-                    
-                    localStorage.setItem('ntub_currentUser', JSON.stringify(this.currentUser));
-                    
-                    if (emailSent) {
-                        this.showMessage('個人資料已提交，等待管理員審核。已發送通知給管理員', 'success');
-                    } else {
-                        this.showMessage('個人資料已提交，等待管理員審核。但通知發送失敗，請聯繫管理員', 'warning');
-                    }
-                    
-                } catch (error) {
-                    this.showMessage('更新失敗：' + error.message, 'error');
-                }
-            }
+        console.log('🔄 準備發送用戶註冊通知...');
+
+        // 發送用戶註冊通知給管理員
+        const emailSent = await emailService.sendAdminNotification('user_registration', {
+            realName: realName,
+            email: this.currentUser.email,
+            studentId: studentId,
+            phone: phone
+        });
+        
+        console.log('📧 郵件發送結果:', emailSent);
+        
+        localStorage.setItem('ntub_currentUser', JSON.stringify(this.currentUser));
+        
+        if (emailSent) {
+            this.showMessage('個人資料已提交，等待管理員審核。已發送通知給管理員', 'success');
+        } else {
+            this.showMessage('個人資料已提交，等待管理員審核。但通知發送失敗，請聯繫管理員', 'warning');
+        }
+        
+    } catch (error) {
+        console.error('❌ 處理個人資料更新錯誤:', error);
+        this.showMessage('更新失敗：' + error.message, 'error');
+    }
+}
 
             handleLogout(e) {
                 e.preventDefault();

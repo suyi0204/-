@@ -246,14 +246,31 @@ function generateEmailContent(type, notification_type, data) {
 }
 
 // 郵件發送 API
+// 郵件發送 API
 app.post('/api/send-email', async (req, res) => {
     try {
         const { to, type, notification_type, data } = req.body;
 
-        console.log('📧 收到郵件發送請求:', { to, type, notification_type });
+        console.log('📧 收到郵件發送請求:', { 
+            to, 
+            type, 
+            notification_type,
+            timestamp: new Date().toISOString()
+        });
+
+        // 檢查 Gmail 配置
+        if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
+            console.error('❌ Gmail 環境變數未設置');
+            return res.status(500).json({ 
+                success: false, 
+                error: '郵件服務配置錯誤' 
+            });
+        }
 
         // 生成郵件內容
         const emailContent = generateEmailContent(type, notification_type, data);
+        
+        console.log('📝 郵件內容生成完成，收件人:', to);
 
         const mailOptions = {
             from: process.env.GMAIL_USER,
@@ -262,10 +279,17 @@ app.post('/api/send-email', async (req, res) => {
             html: emailContent.html
         };
 
+        console.log('🔄 開始發送郵件...');
+
         // 發送郵件
         const result = await transporter.sendMail(mailOptions);
         
-        console.log('✅ 郵件發送成功:', result.messageId);
+        console.log('✅ 郵件發送成功:', {
+            messageId: result.messageId,
+            to: to,
+            timestamp: new Date().toISOString()
+        });
+        
         res.json({ 
             success: true, 
             message: '郵件發送成功',
@@ -273,7 +297,13 @@ app.post('/api/send-email', async (req, res) => {
         });
 
     } catch (error) {
-        console.error('❌ 郵件發送失敗:', error);
+        console.error('❌ 郵件發送失敗 - 詳細錯誤:', {
+            error: error.message,
+            stack: error.stack,
+            to: req.body.to,
+            timestamp: new Date().toISOString()
+        });
+        
         res.status(500).json({ 
             success: false, 
             error: '郵件發送失敗',
