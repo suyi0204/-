@@ -1029,116 +1029,117 @@
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1wbm50b3FnenZmcHhidmtkc2VxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMyMjc5NzgsImV4cCI6MjA3ODgwMzk3OH0.XGGT6Hf8klN54uWJlBbn2_zydSoB3s4O92S-OdA9tX4';
 
         // Gmail SMTP 服務
-        class GmailSMTPService {
+        // Gmail SMTP 服務
+class GmailSMTPService {
     constructor() {
         // 使用完整的後端 URL
         this.apiEndpoint = 'https://ample-unity-production.up.railway.app/api/send-email';
         // 或者如果您有部署後端，使用實際的後端網址
         // 如果還在本地開發，手機無法訪問 localhost
     }
-}
-            async sendEmail(emailData) {
-                try {
-                    console.log('📧 發送郵件:', emailData);
-                    
-                    const response = await fetch(this.apiEndpoint, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify(emailData)
-                    });
 
-                    if (!response.ok) {
-                        throw new Error('郵件發送失敗');
-                    }
+    async sendEmail(emailData) {
+        try {
+            console.log('📧 發送郵件:', emailData);
+            
+            const response = await fetch(this.apiEndpoint, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(emailData)
+            });
 
-                    const result = await response.json();
-                    console.log('✅ 郵件發送成功:', result);
-                    return true;
-                    
-                } catch (error) {
-                    console.error('❌ 郵件發送失敗:', error);
-                    return false;
-                }
+            if (!response.ok) {
+                throw new Error('郵件發送失敗');
             }
 
-            // 發送管理員通知
-            async sendAdminNotification(type, data) {
-                let emailData = {
-                    to: '11056046@ntub.edu.tw',
-                    type: 'admin',
-                    notification_type: type,
-                    timestamp: new Date().toLocaleString('zh-TW'),
-                    system_url: window.location.origin
-                };
-
-                switch(type) {
-                    case 'user_registration':
-                        emailData.subject = `【新用戶註冊】${data.realName} 已完成註冊`;
-                        emailData.data = {
-                            real_name: data.realName,
-                            user_email: data.email,
-                            student_id: data.studentId,
-                            phone: data.phone
-                        };
-                        break;
-                        
-                    case 'new_booking':
-                        emailData.subject = `【新預約通知】${data.realName} 預約了練團室`;
-                        emailData.data = {
-                            real_name: data.realName,
-                            user_email: data.email,
-                            booking_date: data.bookingDate,
-                            booking_time: data.bookingTime,
-                            booking_type: data.bookingType,
-                            booking_name: data.bookingName,
-                            booking_notes: data.bookingNotes || '無'
-                        };
-                        break;
-                }
-
-                return await this.sendEmail(emailData);
-            }
-
-            // 發送用戶通知
-            async sendUserNotification(type, data) {
-                let emailData = {
-                    to: data.userEmail,
-                    type: 'user',
-                    notification_type: type,
-                    timestamp: new Date().toLocaleString('zh-TW'),
-                    system_url: window.location.origin
-                };
-
-                switch(type) {
-                    case 'approval_result':
-                        emailData.subject = `【帳號審核通知】${data.realName} - 北商熱音社`;
-                        emailData.data = {
-                            real_name: data.realName,
-                            student_id: data.studentId,
-                            approval_status: data.status,
-                            admin_notes: data.notes || ''
-                        };
-                        break;
-                        
-                    case 'booking_confirmation':
-                        emailData.subject = `【預約成功】${data.bookingDate} ${data.bookingTime} - ${data.bookingName}`;
-                        emailData.data = {
-                            real_name: data.realName,
-                            booking_date: data.bookingDate,
-                            booking_time: data.bookingTime,
-                            booking_type: data.bookingType,
-                            booking_name: data.bookingName,
-                            booking_notes: data.bookingNotes || '無',
-                            booking_id: data.bookingId || '系統生成中'
-                        };
-                        break;
-                }
-
-                return await this.sendEmail(emailData);
-            }
+            const result = await response.json();
+            console.log('✅ 郵件發送成功:', result);
+            return true;
+            
+        } catch (error) {
+            console.error('❌ 郵件發送失敗:', error);
+            return false;
         }
+    }
+
+    // 發送管理員通知
+    async sendAdminNotification(type, data) {
+        let emailData = {
+            to: '11056046@ntub.edu.tw',
+            type: 'admin',
+            notification_type: type,
+            timestamp: new Date().toLocaleString('zh-TW'),
+            system_url: window.location.origin
+        };
+
+        switch(type) {
+            case 'user_registration':
+                emailData.subject = `【新用戶註冊】${data.realName} 已完成註冊`;
+                emailData.data = {
+                    real_name: data.realName,
+                    user_email: data.email,
+                    student_id: data.studentId,
+                    phone: data.phone
+                };
+                break;
+                
+            case 'new_booking':
+                emailData.subject = `【新預約通知】${data.realName} 預約了練團室`;
+                emailData.data = {
+                    real_name: data.realName,
+                    user_email: data.email,
+                    booking_date: data.bookingDate,
+                    booking_time: data.bookingTime,
+                    booking_type: data.bookingType,
+                    booking_name: data.bookingName,
+                    booking_notes: data.bookingNotes || '無'
+                };
+                break;
+        }
+
+        return await this.sendEmail(emailData);
+    }
+
+    // 發送用戶通知
+    async sendUserNotification(type, data) {
+        let emailData = {
+            to: data.userEmail,
+            type: 'user',
+            notification_type: type,
+            timestamp: new Date().toLocaleString('zh-TW'),
+            system_url: window.location.origin
+        };
+
+        switch(type) {
+            case 'approval_result':
+                emailData.subject = `【帳號審核通知】${data.realName} - 北商熱音社`;
+                emailData.data = {
+                    real_name: data.realName,
+                    student_id: data.studentId,
+                    approval_status: data.status,
+                    admin_notes: data.notes || ''
+                };
+                break;
+                
+            case 'booking_confirmation':
+                emailData.subject = `【預約成功】${data.bookingDate} ${data.bookingTime} - ${data.bookingName}`;
+                emailData.data = {
+                    real_name: data.realName,
+                    booking_date: data.bookingDate,
+                    booking_time: data.bookingTime,
+                    booking_type: data.bookingType,
+                    booking_name: data.bookingName,
+                    booking_notes: data.bookingNotes || '無',
+                    booking_id: data.bookingId || '系統生成中'
+                };
+                break;
+        }
+
+        return await this.sendEmail(emailData);
+    }
+}
 
         // 雲端資料儲存（使用 Supabase）
         class SupabaseService {
