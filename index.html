@@ -63,6 +63,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            position: relative;
         }
 
         .nav-logo {
@@ -94,6 +95,16 @@
         .nav-item:hover {
             background: var(--primary-light);
             color: var(--primary-dark);
+        }
+
+        .nav-toggle {
+            display: none;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: var(--primary);
+            cursor: pointer;
+            padding: 0.5rem;
         }
 
         .hidden {
@@ -271,264 +282,141 @@
             color: var(--text-light);
         }
 
-        /* 在現有的 CSS 中添加或修改這些樣式 */
-
-/* 優化時間格子樣式 */
-.time-slot {
-    height: 60px;
-    border-bottom: 1px solid var(--gray-light);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    position: relative;
-    padding: 4px;
-    font-size: 0.8rem;
-    text-align: center;
-    transition: all 0.2s ease;
-}
-
-/* 優化預約資訊顯示 */
-.booking-info {
-    font-size: 0.7rem;
-    text-align: center;
-    padding: 2px;
-    width: 100%;
-    overflow: hidden;
-}
-
-.booking-name {
-    font-weight: 700;
-    margin-bottom: 1px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    font-size: 0.65rem;
-}
-
-.booking-type {
-    font-size: 0.6rem;
-    color: var(--text-light);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-/* 優化狀態文字顯示 */
-.time-slot.past::after,
-.time-slot.future-limit::after,
-.time-slot.available::after {
-    content: attr(data-status);
-    font-size: 0.75rem;
-    font-weight: 500;
-}
-
-/* 確保格子內容居中對齊 */
-.time-slot > * {
-    width: 100%;
-}
-
-/* 優化日曆標頭 */
-.day-header {
-    padding: 8px 4px;
-    text-align: center;
-    font-weight: 600;
-    background: var(--primary-light);
-    color: var(--primary-dark);
-    border-bottom: 1px solid var(--gray);
-    height: 50px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-}
-
-.day-name {
-    font-size: 0.85rem;
-    font-weight: 700;
-    margin-bottom: 2px;
-}
-
-.day-date {
-    font-size: 0.75rem;
-    color: var(--text-light);
-}
-
-/* 優化時間列 */
-.time-slot-header {
-    padding: 8px 4px;
-    text-align: center;
-    font-weight: 600;
-    color: var(--text-dark);
-    border-bottom: 1px solid var(--gray);
-    height: 50px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.85rem;
-}
-
-/* 響應式優化 */
-@media (max-width: 768px) {
-    .time-slot {
-        height: 50px;
-        font-size: 0.7rem;
-    }
-    
-    .booking-name {
-        font-size: 0.6rem;
-    }
-    
-    .booking-type {
-        font-size: 0.55rem;
-    }
-    
-    .day-header,
-    .time-slot-header {
-        height: 45px;
-    }
-}
-        /* 其他樣式保持不變 */
-        .form-group {
-            margin-bottom: 1.5rem;
+        /* 優化時間格子樣式 */
+        .time-slot {
+            height: 60px;
+            border-bottom: 1px solid var(--gray-light);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            position: relative;
+            padding: 4px;
+            font-size: 0.8rem;
+            text-align: center;
+            transition: all 0.2s ease;
         }
 
-        .form-label {
-            display: block;
-            margin-bottom: 0.5rem;
-            font-weight: 600;
-            color: var(--text-dark);
-        }
-
-        .form-control {
+        /* 優化預約資訊顯示 */
+        .booking-info {
+            font-size: 0.7rem;
+            text-align: center;
+            padding: 2px;
             width: 100%;
-            padding: 10px 12px;
-            border: 1px solid var(--gray);
-            border-radius: var(--radius);
-            font-size: 1rem;
-            background: white;
+            overflow: hidden;
         }
 
-        .form-control:focus {
-            outline: none;
-            border-color: var(--primary);
+        .booking-name {
+            font-weight: 700;
+            margin-bottom: 1px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            font-size: 0.65rem;
         }
 
-        /* 添加這些新的 CSS 樣式來優化文字排版 */
+        .booking-type {
+            font-size: 0.6rem;
+            color: var(--text-light);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
 
-/* 優化狀態文字顯示 */
-.status-text {
-    font-size: 0.75rem;
-    font-weight: 500;
-    text-align: center;
-}
+        /* 優化狀態文字顯示 */
+        .status-text {
+            font-size: 0.75rem;
+            font-weight: 500;
+            text-align: center;
+        }
 
-/* 確保預約資訊正確居中 */
-.booking-info {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    width: 100%;
-    height: 100%;
-    padding: 2px;
-}
+        /* 確保預約資訊正確居中 */
+        .booking-info {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            height: 100%;
+            padding: 2px;
+        }
 
-.booking-name {
-    font-weight: 700;
-    margin-bottom: 1px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    font-size: 0.65rem;
-    max-width: 100%;
-    text-align: center;
-}
+        .booking-name {
+            font-weight: 700;
+            margin-bottom: 1px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            font-size: 0.65rem;
+            max-width: 100%;
+            text-align: center;
+        }
 
-.booking-type {
-    font-size: 0.6rem;
-    color: var(--text-light);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 100%;
-    text-align: center;
-}
+        .booking-type {
+            font-size: 0.6rem;
+            color: var(--text-light);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 100%;
+            text-align: center;
+        }
 
-/* 優化時間格子的整體佈局 */
-.time-slot {
-    height: 60px;
-    border-bottom: 1px solid var(--gray-light);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    position: relative;
-    padding: 2px;
-    font-size: 0.8rem;
-    text-align: center;
-    transition: all 0.2s ease;
-}
+        /* 優化時間格子的整體佈局 */
+        .time-slot {
+            height: 60px;
+            border-bottom: 1px solid var(--gray-light);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            position: relative;
+            padding: 2px;
+            font-size: 0.8rem;
+            text-align: center;
+            transition: all 0.2s ease;
+        }
 
-/* 確保所有內容都正確居中 */
-.time-slot > * {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    width: 100%;
-    height: 100%;
-}
+        /* 確保所有內容都正確居中 */
+        .time-slot > * {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            height: 100%;
+        }
 
-/* 優化響應式設計 */
-@media (max-width: 768px) {
-    .time-slot {
-        height: 50px;
-        font-size: 0.7rem;
-    }
-    
-    .booking-name {
-        font-size: 0.6rem;
-    }
-    
-    .booking-type {
-        font-size: 0.55rem;
-    }
-    
-    .status-text {
-        font-size: 0.7rem;
-    }
-}
+        /* 優化不同狀態的視覺效果 */
+        .time-slot.available {
+            background: rgba(16, 185, 129, 0.05);
+        }
 
-/* 優化不同狀態的視覺效果 */
-.time-slot.available {
-    background: rgba(16, 185, 129, 0.05);
-}
+        .time-slot.available:hover {
+            background: rgba(16, 185, 129, 0.1);
+        }
 
-.time-slot.available:hover {
-    background: rgba(16, 185, 129, 0.1);
-}
+        .time-slot.booked {
+            background: rgba(245, 158, 11, 0.1);
+            cursor: not-allowed;
+        }
 
-.time-slot.booked {
-    background: rgba(245, 158, 11, 0.1);
-    cursor: not-allowed;
-}
+        .time-slot.own-booking {
+            background: rgba(59, 130, 246, 0.1);
+        }
 
-.time-slot.own-booking {
-    background: rgba(59, 130, 246, 0.1);
-}
+        .time-slot.past {
+            background: rgba(100, 116, 139, 0.05);
+            color: var(--text-light);
+            cursor: not-allowed;
+        }
 
-.time-slot.past {
-    background: rgba(100, 116, 139, 0.05);
-    color: var(--text-light);
-    cursor: not-allowed;
-}
+        .time-slot.future-limit {
+            background: rgba(100, 116, 139, 0.02);
+            color: var(--text-light);
+            cursor: not-allowed;
+        }
 
-.time-slot.future-limit {
-    background: rgba(100, 116, 139, 0.02);
-    color: var(--text-light);
-    cursor: not-allowed;
-}
         .status-pending { 
             color: var(--warning); 
             font-weight: 700;
@@ -671,9 +559,70 @@
             margin-left: 5px;
         }
 
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: var(--text-dark);
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--gray);
+            border-radius: var(--radius);
+            font-size: 1rem;
+            background: white;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        /* 響應式設計 */
         @media (max-width: 768px) {
+            .nav-toggle {
+                display: block;
+            }
+
             .nav-menu {
                 display: none;
+                flex-direction: column;
+                position: absolute;
+                top: 100%;
+                left: 0;
+                width: 100%;
+                background: white;
+                box-shadow: var(--shadow);
+                padding: 1rem 0;
+                z-index: 1000;
+            }
+
+            .nav-menu.active {
+                display: flex;
+            }
+
+            .nav-item {
+                padding: 12px 2rem;
+                border-bottom: 1px solid var(--gray-light);
+                justify-content: flex-start;
+            }
+
+            .nav-item:last-child {
+                border-bottom: none;
+            }
+
+            .main-content {
+                padding: 1rem;
+            }
+
+            .card {
+                padding: 1.5rem;
             }
 
             .timeline-container {
@@ -705,12 +654,26 @@
                 grid-template-columns: 1fr;
             }
 
-            .main-content {
-                padding: 1rem;
+            .time-slot {
+                height: 50px;
+                font-size: 0.7rem;
             }
-
-            .card {
-                padding: 1.5rem;
+            
+            .booking-name {
+                font-size: 0.6rem;
+            }
+            
+            .booking-type {
+                font-size: 0.55rem;
+            }
+            
+            .day-header,
+            .time-slot-header {
+                height: 45px;
+            }
+            
+            .status-text {
+                font-size: 0.7rem;
             }
         }
     </style>
@@ -724,6 +687,12 @@
                     <i class="fas fa-guitar"></i>
                     <span>北商熱音社</span>
                 </div>
+                
+                <!-- 漢堡選單按鈕 -->
+                <button class="nav-toggle" id="navToggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+                
                 <div class="nav-menu" id="navMenu">
                     <a href="#" class="nav-item" data-view="home">首頁</a>
                     <a href="#" class="nav-item" data-view="login" id="loginNav">登入</a>
@@ -1187,7 +1156,7 @@
                 }
             }
 
-            // 檢查是否為管理員
+            //
             isAdmin(user) {
                 return user && (user.is_admin === true || user.is_admin === 'true' || user.email === '11056046@ntub.edu.tw');
             }
